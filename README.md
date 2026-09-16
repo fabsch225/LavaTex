@@ -5,8 +5,8 @@ production-ready LaTeX. All real export logic sits on top of `pandoc` +
 `pandoc-crossref`; nothing here re-implements what they already do (no
 regex-patching of pandoc's output, no hand-rolled LaTeX writer).
 
-See the [wiki](../../wiki) for the architecture (with diagrams) and the full
-markdown-spec reference.
+See the [wiki](wiki/Home.md) for the architecture (with diagrams) and the
+full markdown-spec reference.
 
 ## Install
 
