@@ -1,0 +1,9 @@
+{
+	"id": "latex-exporter",
+	"name": "LaTeX Exporter",
+	"version": "0.2.0",
+	"minAppVersion": "0.15.0",
+	"description": "Export a note to production-ready LaTeX via pandoc + pandoc-crossref.",
+	"author": "Fabian Schuller",
+	"isDesktopOnly": true
+}

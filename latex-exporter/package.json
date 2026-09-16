@@ -1,0 +1,17 @@
+{
+	"name": "latex-exporter",
+	"version": "0.2.0",
+	"description": "Export a note to production-ready LaTeX via pandoc + pandoc-crossref.",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+	},
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"esbuild": "^0.23.0",
+		"obsidian": "^1.5.0",
+		"typescript": "^5.5.0"
+	}
+}

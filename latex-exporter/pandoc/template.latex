@@ -1,0 +1,52 @@
+\documentclass[$if(fontsize)$$fontsize$$else$12pt$endif$]{article}
+
+\usepackage[margin=$if(margin)$$margin$$else$1in$endif$]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{mathtools, amssymb, amsthm}
+\usepackage{mathrsfs}
+\usepackage{bbm}
+\usepackage{bm}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+\usepackage{setspace}
+\usepackage{enumitem}
+\setstretch{$if(linestretch)$$linestretch$$else$1.25$endif$}
+
+% required by pandoc for compact (-) lists
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+$for(theorems)$
+$if(theorems.counter)$
+\newtheorem{$theorems.id$}{$theorems.name$}[$theorems.counter$]
+$else$
+\newtheorem{$theorems.id$}[$theorems.like$]{$theorems.name$}
+$endif$
+$endfor$
+
+\numberwithin{equation}{section}
+
+$if(refname)$
+\renewcommand{\refname}{$refname$}
+$endif$
+$if(proofname)$
+\renewcommand{\proofname}{$proofname$}
+$endif$
+
+$if(macros)$
+$macros$
+$endif$
+
+\title{$title$}
+\author{$for(author)$$author$$sep$ \and $endfor$}
+\date{$if(date)$$date$$else$\today$endif$}
+
+\begin{document}
+\maketitle
+
+$body$
+
+$if(bibliography-raw)$
+$bibliography-raw$
+$endif$
+
+\end{document}

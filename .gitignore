@@ -1,0 +1,6 @@
+.DS_Store
+.claude.json
+
+# Local-only: a fork kept for reference, not part of the shipped system
+# (see README's "callout-manager/" section). Has its own git history.
+callout-manager/
