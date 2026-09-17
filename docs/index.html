@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home — LavaTex</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="index.html">LavaTex</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="spec.html">Spec</a>
+    <a href="https://github.com/fabsch225/LavaTex">GitHub ↗</a>
+  </nav>
+</header>
+<main>
+<h1 id="lavatex">LavaTex</h1>
+<p><strong>LavaTex</strong> is an opinionated Obsidian plugin for
+writing math in Obsidian and exporting it to production-ready,
+collaborator-friendly LaTeX. It’s a thin layer on top of
+<code>pandoc</code> + <code>pandoc-crossref</code> — the plugin’s own
+code is only the pieces pandoc doesn’t provide: a friendlier
+note-editing syntax, and live math-macro rendering in Obsidian’s own
+editor.</p>
+<ul>
+<li><strong><a href="architecture.html">Architecture</a></strong> — how
+a note becomes a <code>.tex</code> file, and how the live-preview math
+macros work. Diagrammed.</li>
+<li><strong><a href="spec.html">Spec</a></strong> — the exact markdown
+superset LavaTex reads: frontmatter fields, bold-statement theorem
+syntax, reference shortcuts, and where raw LaTeX is still the right
+tool.</li>
+</ul>
+<h2 id="quick-example">Quick example</h2>
+<pre><code>**Lemma** (\kk S.21f) {#lem-gitter-invariant}
+Man nennt
+$$
+\delta := \delta(\omega_1, \omega_2)
+$$
+
+**Beweis**
+Betrachte ...
+∎</code></pre>
+<p>exports to a real
+<code>\begin{lemma}[\kk S.21f]\label{lem-gitter-invariant}...</code>
+environment, numbered and cross-referenceable, with a matching
+<code>\begin{proof}...\end{proof}</code>.</p>
+<p>See the <a href="https://github.com/fabsch225/LavaTex#readme">repo
+README</a> for install steps and a full worked example (a real paper,
+converted and re-exported byte-for-byte equivalent to the hand-written
+original).</p>
+</main>
+<footer class="site-footer">
+  <a href="https://github.com/fabsch225/LavaTex">fabsch225/LavaTex</a>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral" });</script>
+</body>
+</html>

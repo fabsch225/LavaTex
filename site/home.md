@@ -6,9 +6,9 @@ thin layer on top of `pandoc` + `pandoc-crossref` — the plugin's own code
 is only the pieces pandoc doesn't provide: a friendlier note-editing syntax,
 and live math-macro rendering in Obsidian's own editor.
 
-- **[Architecture](Architecture.md)** — how a note becomes a `.tex` file,
+- **[Architecture](architecture.html)** — how a note becomes a `.tex` file,
   and how the live-preview math macros work. Diagrammed.
-- **[Spec](Spec.md)** — the exact markdown superset LavaTex reads:
+- **[Spec](spec.html)** — the exact markdown superset LavaTex reads:
   frontmatter fields, bold-statement theorem syntax, reference shortcuts,
   and where raw LaTeX is still the right tool.
 
