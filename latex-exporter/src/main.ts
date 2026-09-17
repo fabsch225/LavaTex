@@ -1,6 +1,7 @@
-import { Notice, Plugin, type TFile } from "obsidian";
+import { Notice, Plugin, type TFile, getFrontMatterInfo, parseYaml } from "obsidian";
 
 import { exportNoteToLatex, exportNoteToPdf } from "./export/exporter";
+import { resolveFrontmatterReferences } from "./export/frontmatterRefs";
 import { extractInlineMacros } from "./latex/inlineMacros";
 import { collectLabels } from "./latex/labelCollector";
 import { registerMathMacros } from "./obsidian-math/mathJaxMacros";
@@ -100,10 +101,13 @@ export default class LatexExporterPlugin extends Plugin {
 	}
 
 	private async refreshMathMacros(file: TFile): Promise<void> {
-		const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-		const frontmatterMacros = frontmatter?.["macros"];
-
 		const body = await this.app.vault.cachedRead(file);
+		const resolved = await resolveFrontmatterReferences(this.app, file, body);
+		const frontmatterInfo = getFrontMatterInfo(resolved);
+		const frontmatterMacros = frontmatterInfo.exists
+			? (parseYaml(frontmatterInfo.frontmatter) as Record<string, unknown>)["macros"]
+			: undefined;
+
 		const inlineMacros = extractInlineMacros(body);
 
 		const combined = [typeof frontmatterMacros === "string" ? frontmatterMacros : "", inlineMacros]
