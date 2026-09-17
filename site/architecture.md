@@ -39,7 +39,7 @@ up.
 
 ```mermaid
 flowchart LR
-    Note["note.md\n(bold statements, macros:,\nbare \\begin{align}, [#label])"]
+    Note["note.md\n(bold statements, macros:,\nbare \begin{align}, [#label])"]
     Note --> Align["wrapBareAlignEnvironments"]
     Align --> Blocks["preprocessTheoremBlocks\n(frontmatter theorems: -> env ids)"]
     Blocks --> Refs["expandReferenceShortcuts"]
@@ -79,7 +79,7 @@ macro table so they render immediately in edit/preview mode too:
 ```mermaid
 flowchart LR
     FM["frontmatter\nmacros: field"]
-    Body["body {=latex} blocks\n(note-local \\newcommand,\ne.g. a proof-only helper)"]
+    Body["body {=latex} blocks\n(note-local \newcommand,\ne.g. a proof-only helper)"]
 
     FM --> Extract1["(read directly)"]
     Body --> Extract2["extractInlineMacros"]
