@@ -25,7 +25,7 @@ into this repo.
 
 ## Usage
 
-Five commands, all in the command palette:
+Six commands, all in the command palette:
 
 - **Export current note to LaTeX** — writes `<note>.tex` next to the note.
 - **Export current note to PDF** — does the above, then runs `latexmk` on
@@ -36,6 +36,9 @@ Five commands, all in the command palette:
   a `[#label]` shortcut at the cursor.
 - **Insert environment end mark (∎)** — inserts `∎`, the bold-statement
   block terminator (see below). Worth binding a hotkey to.
+- **Insert raw LaTeX** — prompts for a snippet (e.g. `\ohnebew`) and inserts
+  it at the cursor as `` `\ohnebew`{=latex} ``, pandoc's raw-inline syntax:
+  passed through to the exported `.tex` completely unmodified.
 - Math macros (frontmatter `macros:` and body-local `\newcommand`s) register
   with Obsidian's live renderer automatically — nothing to invoke.
 

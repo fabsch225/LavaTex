@@ -4,6 +4,7 @@ import { exportNoteToLatex, exportNoteToPdf } from "./export/exporter";
 import { extractInlineMacros } from "./latex/inlineMacros";
 import { collectLabels } from "./latex/labelCollector";
 import { registerMathMacros } from "./obsidian-math/mathJaxMacros";
+import { RawLatexModal } from "./ui/RawLatexModal";
 import { ReferenceSuggestModal } from "./ui/ReferenceSuggestModal";
 
 const ENVIRONMENT_END_MARK = "∎";
@@ -84,6 +85,16 @@ export default class LatexExporterPlugin extends Plugin {
 			name: `Insert environment end mark (${ENVIRONMENT_END_MARK})`,
 			editorCallback: (editor) => {
 				editor.replaceSelection(ENVIRONMENT_END_MARK);
+			},
+		});
+
+		this.addCommand({
+			id: "insert-raw-latex",
+			name: "Insert raw LaTeX",
+			editorCallback: (editor) => {
+				new RawLatexModal(this.app, (value) => {
+					editor.replaceSelection("`" + value + "`{=latex}");
+				}).open();
 			},
 		});
 	}
