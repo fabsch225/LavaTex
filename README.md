@@ -61,6 +61,7 @@ src/
   export/
     paths.ts                   vault/plugin filesystem paths
     pathEnv.ts                 PATH augmentation shared by pandoc.ts/latex.ts
+    frontmatterRefs.ts         resolve [[wikilink]] frontmatter fields to referenced notes
     pandoc.ts                  spawn pandoc with the fixed flag set
     latex.ts                   spawn latexmk to compile PDF, open it
     exporter.ts                orchestrates the preprocessing passes + pandoc(+pdf)
@@ -82,10 +83,11 @@ that does both jobs.
 
 ## Markdown spec
 
-Fixed preamble (always the same packages/spacing — this is what makes it
-opinionated): `mathtools`, `amssymb`, `amsthm`, `mathrsfs`, `bbm`, `bm`,
-`hyperref` (blue links), `setspace`, `enumitem`; equations numbered per
-section.
+Equations are numbered per section; everything else about the preamble is
+frontmatter-driven — there's no hardcoded package list baked into the
+plugin. `examples/preamble.md` is a suggested opinionated default
+(`mathtools`, `amssymb`, `amsthm`, `mathrsfs`, `bbm`, `bm`, `hyperref`
+with blue links, `setspace`, `enumitem`), not a requirement.
 
 Per-document YAML frontmatter:
 
@@ -93,6 +95,9 @@ Per-document YAML frontmatter:
 - `refname`, `proofname` — German by default in examples, override per note.
   `proofname`'s value also doubles as the word you bold to start a proof
   (see below).
+- `preamble`: literal LaTeX (`\usepackage...`), inserted into the preamble
+  right after `\documentclass`/`geometry`/`inputenc` — this is where the
+  opinionated package list lives now (see `examples/preamble.md`).
 - `theorems`: list of `{id, name, counter}` (new counter) or `{id, name, like}`
   (shares a counter). `id` becomes the `\newtheorem`/environment name;
   `name` is the word you bold in the note to start one.
@@ -102,6 +107,16 @@ Per-document YAML frontmatter:
   after the body
 - `autoEqnLabels: true` — number every display equation, not just labelled
   ones
+
+`preamble`, `theorems`, `macros`, and `bibliography-raw` can each be either
+the literal value shown above, or `"[[Some Note]]"` — a wikilink to another
+note holding that content instead, so shared preamble/macros/bibliography/
+theorem setups don't have to be copy-pasted into every note's frontmatter.
+For `preamble`/`macros`/`bibliography-raw` the linked note's body (plain
+text, frontmatter stripped if it has any) is used; for `theorems` it's the
+linked note's own `theorems:` frontmatter field. See `examples/preamble.md`,
+`examples/macros.md`, `examples/bibliography.md`, `examples/theorems.md`,
+referenced from `examples/weierstrass.md`.
 
 Body — theorem-like environments are bold statements, not fenced divs or
 callouts (both were painful to edit — every line needed a `>` prefix):
@@ -210,12 +225,14 @@ changes. Caveats:
 
 ## Regenerating the example / debugging outside Obsidian
 
-The bold-statement preprocessing needs frontmatter's parsed `theorems:` list
-(normally supplied by Obsidian's metadata cache), so it isn't a single
-pandoc command — see `latex-exporter/src/export/exporter.ts` for the exact
-sequence: read note -> `convertAlignBlocksToRaw` -> `preprocessTheoremBlocks`
--> `expandReferenceShortcuts` -> write temp `.md` ->
-pandoc. To debug the pandoc step alone against an already-preprocessed file:
+The bold-statement preprocessing needs frontmatter's parsed `theorems:` list,
+so it isn't a single pandoc command — see `latex-exporter/src/export/exporter.ts`
+for the exact sequence: read note -> `resolveFrontmatterReferences`
+(inline any `[[wikilink]]`-referenced preamble/macros/bibliography/theorems)
+-> `convertAlignBlocksToRaw` -> `preprocessTheoremBlocks` ->
+`expandReferenceShortcuts` -> write temp `.md` -> pandoc. To debug the
+pandoc step alone against an already-preprocessed file (frontmatter
+references already inlined by hand, if the note used any):
 
 ```sh
 pandoc preprocessed.md \

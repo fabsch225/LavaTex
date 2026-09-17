@@ -4,17 +4,18 @@ This is the exact markdown superset LavaTex reads. It's deliberately
 opinionated — some things are fixed and not configurable — and everything
 that *is* configurable lives in one place: the note's YAML frontmatter.
 
-## Fixed preamble
+## Preamble
 
-Every export gets the same LaTeX preamble, unconditionally:
+Equations are always numbered per section
+(`\numberwithin{equation}{section}`); everything else about the preamble —
+the package list included — comes from the note's `preamble` frontmatter
+field, not a hardcoded list in `template.latex`.
 
-- Packages: `mathtools`, `amssymb`, `amsthm`, `mathrsfs`, `bbm`, `bm`,
-  `hyperref` (colored links, blue), `setspace`, `enumitem`
-- Equations numbered per section (`\numberwithin{equation}{section}`)
-
-If you need a different package set for a specific project, that's a change
-to `latex-exporter/pandoc/template.latex`, not a per-note setting — this
-system assumes one consistent house style across all your notes.
+`examples/preamble.md` is a suggested opinionated default (`mathtools`,
+`amssymb`, `amsthm`, `mathrsfs`, `bbm`, `bm`, `hyperref` with colored blue
+links, `setspace`, `enumitem`), referenced from `examples/weierstrass.md`'s
+frontmatter — reuse it, or write your own if a project needs a different
+package set.
 
 ## Frontmatter fields
 
@@ -24,10 +25,20 @@ system assumes one consistent house style across all your notes.
 | `fontsize`, `margin`, `linestretch` | Document-wide layout knobs |
 | `refname` | Renames `\refname` (e.g. `Referenzen` for a German bibliography heading) |
 | `proofname` | Renames `\proofname`, **and** is the word you bold to start a proof block (see below) |
+| `preamble` | Literal LaTeX (`\usepackage...`), inserted right after `\documentclass`/`geometry`/`inputenc` |
 | `theorems` | List of environments — see below |
 | `macros` | Literal `\newcommand`/`\renewcommand` text |
 | `bibliography-raw` | Literal LaTeX (e.g. a `thebibliography` block), inserted after the body |
 | `autoEqnLabels: true` | Number every display equation, not just ones with an explicit `{#eq:...}` |
+
+`preamble`, `theorems`, `macros`, and `bibliography-raw` each also accept
+`"[[Some Note]]"` — a wikilink to another note holding that content, instead
+of the literal value — so a shared preamble/macro/bibliography/theorem setup
+doesn't have to be copy-pasted into every note. For `preamble`/`macros`/
+`bibliography-raw` the linked note's body is used (frontmatter stripped, if
+it has any); for `theorems` it's the linked note's own `theorems:`
+frontmatter field, so that file's shape is identical to writing the list
+inline, just in its own note.
 
 ### `theorems`
 

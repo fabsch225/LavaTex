@@ -23,10 +23,14 @@ latex-exporter/src/
     mathJaxMacros.ts             feed macro text to Obsidian's live MathJax renderer
   export/
     paths.ts                     vault/plugin filesystem paths
+    pathEnv.ts                   PATH augmentation shared by pandoc.ts/latex.ts
+    frontmatterRefs.ts           resolve [[wikilink]] frontmatter fields to referenced notes
     pandoc.ts                    spawn pandoc with the fixed flag set
-    exporter.ts                  orchestrates the preprocessing passes + pandoc
+    latex.ts                     spawn latexmk to compile PDF, open it
+    exporter.ts                  orchestrates the preprocessing passes + pandoc(+pdf)
   ui/
     ReferenceSuggestModal.ts     fuzzy picker for "Insert reference to label"
+    RawLatexModal.ts             prompt for a raw LaTeX snippet to insert
   main.ts                        wires commands + events to the pieces above
 ```
 
@@ -40,7 +44,8 @@ up.
 ```mermaid
 flowchart LR
     Note["note.md\n(bold statements, macros:,\n$$\\begin{align}...\\end{align}$$, [#label])"]
-    Note --> Align["convertAlignBlocksToRaw"]
+    Note --> FmRefs["resolveFrontmatterReferences\n([[wikilink]] preamble/macros/\nbibliography/theorems -> inlined)"]
+    FmRefs --> Align["convertAlignBlocksToRaw"]
     Align --> Blocks["preprocessTheoremBlocks\n(frontmatter theorems: -> env ids)"]
     Blocks --> Refs["expandReferenceShortcuts"]
     Refs --> Tmp[("temp .md")]

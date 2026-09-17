@@ -7,7 +7,7 @@
  * syntax) so this file stays a thin sequence of calls, not a place where
  * unrelated concerns accumulate.
  */
-import { type App, type TFile } from "obsidian";
+import { type App, type TFile, getFrontMatterInfo, parseYaml } from "obsidian";
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
@@ -16,13 +16,17 @@ import { collectEnvironmentTriggers } from "../latex/theoremEnvironments";
 import { preprocessTheoremBlocks } from "../latex/theoremBlockPreprocessor";
 import { convertAlignBlocksToRaw } from "../latex/rawEnvironments";
 import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
+import { resolveFrontmatterReferences } from "./frontmatterRefs";
 import { compileToPdf, openInDefaultApp } from "./latex";
 import { runPandoc } from "./pandoc";
 import { pluginDir, vaultBasePath } from "./paths";
 
 export async function exportNoteToLatex(app: App, file: TFile, pluginId: string): Promise<string> {
-	const raw = await app.vault.read(file);
-	const frontmatter = app.metadataCache.getFileCache(file)?.frontmatter;
+	const raw = await resolveFrontmatterReferences(app, file, await app.vault.read(file));
+	const frontmatterInfo = getFrontMatterInfo(raw);
+	const frontmatter = frontmatterInfo.exists
+		? (parseYaml(frontmatterInfo.frontmatter) as Record<string, unknown>)
+		: undefined;
 	const triggers = collectEnvironmentTriggers(frontmatter);
 
 	const preprocessed = expandReferenceShortcuts(

@@ -8,34 +8,10 @@ linestretch: 1.25
 refname: Referenzen
 proofname: Beweis
 autoEqnLabels: true
-theorems:
-  - {id: theorem, name: Theorem, counter: section}
-  - {id: lemma, name: Lemma, like: theorem}
-  - {id: prop, name: Proposition, like: theorem}
-  - {id: definition, name: Definition, like: theorem}
-  - {id: bem, name: Bemerkung, like: theorem}
-  - {id: kor, name: Korollar, like: theorem}
-  - {id: deflemma, name: "Definition und Lemma", like: theorem}
-macros: |
-  \newcommand{\ohalbe}{\frac{\omega}{2}}
-  \newcommand{\kk}{\cite{kk} }
-  \newcommand{\vol}{\operatorname{vol}}
-  \newcommand*{\pa}{%
-      \rlap{\rotatebox{-30}{\rule[.05ex]{.4pt}{.77em}}}%
-      \kern.04em%
-      \rlap{\kern.36em\raisebox{0.649519052835em}{\rule{.6em}{.4pt}}}%
-      \rule{.6em}{.4pt}\kern-.04em%
-      \rotatebox{-30}{\rule[.05ex]{.4pt}{.77em}}}
-  \newcommand{\basis}{$(\omega _1, \omega _2)$ }
-  \newcommand{\ohnebew}{Ohne Beweis. \qed}
-bibliography-raw: |
-  \begin{thebibliography}{9}
-  \bibitem[KK]{kk}
-  Koecher, Max, und Aloys Krieg. 2007. Elliptische Funktionen und Modulformen. 2. Aufl. Masterclass. Berlin, Heidelberg: Springer Berlin Heidelberg
-
-  \bibitem[RS]{rr}
-  Remmert, Reinhold, und Georg Schumacher. 2002. Funktionentheorie 1. 5. Aufl. Springer-Lehrbuch. Berlin, Heidelberg: Springer Berlin Heidelberg.
-  \end{thebibliography}
+preamble: "[[preamble]]"
+theorems: "[[theorems]]"
+macros: "[[macros]]"
+bibliography-raw: "[[bibliography]]"
 ---
 
 # Existenz der Weierstraßschen $\varphi$-Funktion
