@@ -16,6 +16,7 @@ import { collectEnvironmentTriggers } from "../latex/theoremEnvironments";
 import { preprocessTheoremBlocks } from "../latex/theoremBlockPreprocessor";
 import { wrapBareAlignEnvironments } from "../latex/rawEnvironments";
 import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
+import { compileToPdf, openInDefaultApp } from "./latex";
 import { runPandoc } from "./pandoc";
 import { pluginDir, vaultBasePath } from "./paths";
 
@@ -47,4 +48,15 @@ export async function exportNoteToLatex(app: App, file: TFile, pluginId: string)
 	}
 
 	return outputPath;
+}
+
+/** Exports the note to LaTeX, compiles it to PDF, and opens the result. */
+export async function exportNoteToPdf(app: App, file: TFile, pluginId: string): Promise<string> {
+	const texPath = await exportNoteToLatex(app, file, pluginId);
+	const pdfPath = await compileToPdf({
+		texPath,
+		cwd: path.dirname(texPath),
+	});
+	await openInDefaultApp(pdfPath);
+	return pdfPath;
 }

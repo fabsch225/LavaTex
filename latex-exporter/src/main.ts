@@ -1,6 +1,6 @@
 import { Notice, Plugin, type TFile } from "obsidian";
 
-import { exportNoteToLatex } from "./export/exporter";
+import { exportNoteToLatex, exportNoteToPdf } from "./export/exporter";
 import { extractInlineMacros } from "./latex/inlineMacros";
 import { collectLabels } from "./latex/labelCollector";
 import { registerMathMacros } from "./obsidian-math/mathJaxMacros";
@@ -45,6 +45,21 @@ export default class LatexExporterPlugin extends Plugin {
 		if (active) {
 			void this.refreshMathMacros(active);
 		}
+
+		this.addCommand({
+			id: "export-note-to-pdf",
+			name: "Export current note to PDF",
+			checkCallback: (checking: boolean) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || file.extension !== "md") {
+					return false;
+				}
+				if (!checking) {
+					void this.runPdfExport(file);
+				}
+				return true;
+			},
+		});
 
 		this.addCommand({
 			id: "insert-reference",
@@ -97,6 +112,20 @@ export default class LatexExporterPlugin extends Plugin {
 			console.error(err);
 			const message = err instanceof Error ? err.message : String(err);
 			new Notice(`LaTeX export failed: ${message.split("\n")[0]}`);
+		}
+	}
+
+	private async runPdfExport(file: TFile): Promise<void> {
+		const notice = new Notice("Compiling PDF…", 0);
+		try {
+			const pdfPath = await exportNoteToPdf(this.app, file, this.manifest.id);
+			notice.hide();
+			new Notice(`Exported to ${pdfPath.split("/").pop()}`);
+		} catch (err) {
+			notice.hide();
+			console.error(err);
+			const message = err instanceof Error ? err.message : String(err);
+			new Notice(`PDF export failed: ${message.split("\n")[0]}`);
 		}
 	}
 }

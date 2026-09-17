@@ -16,12 +16,18 @@ full markdown-spec reference.
    plugins list.
 3. Requires `pandoc` and `pandoc-crossref` on `PATH`
    (`brew install pandoc pandoc-crossref`).
+4. "Export current note to PDF" additionally requires a LaTeX distribution
+   with `latexmk` on `PATH` (e.g. `brew install --cask mactex-no-gui`, or
+   any TeX Live/MiKTeX install).
 
 ## Usage
 
-Four commands, all in the command palette:
+Five commands, all in the command palette:
 
 - **Export current note to LaTeX** — writes `<note>.tex` next to the note.
+- **Export current note to PDF** — does the above, then runs `latexmk` on
+  the result and opens the compiled `<note>.pdf` in your OS's default
+  viewer.
 - **Insert reference to label** — fuzzy-searches every `{#label}` in the
   current note (theorem headers and labelled equations alike) and inserts
   a `[#label]` shortcut at the cursor.
@@ -48,8 +54,10 @@ src/
     mathJaxMacros.ts           feed macros: text to Obsidian's live MathJax renderer
   export/
     paths.ts                   vault/plugin filesystem paths
+    pathEnv.ts                 PATH augmentation shared by pandoc.ts/latex.ts
     pandoc.ts                  spawn pandoc with the fixed flag set
-    exporter.ts                orchestrates the preprocessing passes + pandoc
+    latex.ts                   spawn latexmk to compile PDF, open it
+    exporter.ts                orchestrates the preprocessing passes + pandoc(+pdf)
   ui/
     ReferenceSuggestModal.ts   fuzzy picker for the "insert reference" command
   main.ts                      wires commands + events to the pieces above

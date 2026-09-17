@@ -1,33 +1,13 @@
 import { spawn } from "child_process";
 
+import { envWithExtraPath } from "./pathEnv";
+
 export interface PandocJob {
 	inputPath: string;
 	outputPath: string;
 	templatePath: string;
 	luaFilterPath: string;
 	cwd: string;
-}
-
-// GUI apps on macOS (and often Linux) are launched from Finder/Dock rather
-// than a login shell, so they don't inherit the PATH set up in .zshrc/.bashrc
-// (e.g. Homebrew's /opt/homebrew/bin). Without these, `spawn("pandoc", ...)`
-// fails with ENOENT even though `pandoc` works fine in a terminal.
-const EXTRA_PATH_ENTRIES = [
-	"/opt/homebrew/bin",
-	"/usr/local/bin",
-	"/usr/bin",
-	"/bin",
-];
-
-function buildEnv(): NodeJS.ProcessEnv {
-	const existing = process.env.PATH ?? "";
-	const entries = existing.split(":").filter(Boolean);
-	for (const dir of EXTRA_PATH_ENTRIES) {
-		if (!entries.includes(dir)) {
-			entries.push(dir);
-		}
-	}
-	return { ...process.env, PATH: entries.join(":") };
 }
 
 /** Runs pandoc with the flags this plugin always needs, rejecting with stderr on failure. */
@@ -52,7 +32,7 @@ export function runPandoc(job: PandocJob): Promise<void> {
 	];
 
 	return new Promise((resolve, reject) => {
-		const proc = spawn("pandoc", args, { cwd: job.cwd, env: buildEnv() });
+		const proc = spawn("pandoc", args, { cwd: job.cwd, env: envWithExtraPath() });
 
 		let stderr = "";
 		proc.stderr.on("data", (chunk: Buffer) => {
