@@ -5,7 +5,7 @@ import { resolveFrontmatterReferences } from "./export/frontmatterRefs";
 import { extractInlineMacros } from "./latex/inlineMacros";
 import { collectLabels } from "./latex/labelCollector";
 import { registerMathMacros } from "./obsidian-math/mathJaxMacros";
-import { RawLatexModal } from "./ui/RawLatexModal";
+import { PromptModal } from "./ui/PromptModal";
 import { ReferenceSuggestModal } from "./ui/ReferenceSuggestModal";
 
 const ENVIRONMENT_END_MARK = "∎";
@@ -82,6 +82,59 @@ export default class LatexExporterPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "reference-equation",
+			name: "Reference equation",
+			editorCallback: async (editor) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file) {
+					return;
+				}
+				const text = await this.app.vault.cachedRead(file);
+				const entries = collectLabels(text).filter((entry) => entry.label.startsWith("eq:"));
+				if (entries.length === 0) {
+					new Notice("No labelled equations found in this note.");
+					return;
+				}
+				new ReferenceSuggestModal(
+					this.app,
+					entries,
+					editor,
+					(label) => `[@${label}]`,
+					"Reference equation…",
+				).open();
+			},
+		});
+
+		this.addCommand({
+			id: "add-equation-label",
+			name: "Add equation label",
+			editorCallback: (editor) => {
+				new PromptModal(
+					this.app,
+					{ title: "Add equation label", placeholder: "doppel", submitLabel: "Add" },
+					(value) => {
+						const id = value.startsWith("eq:") ? value : `eq:${value}`;
+						editor.replaceSelection(`{#${id}}`);
+					},
+				).open();
+			},
+		});
+
+		this.addCommand({
+			id: "add-theorem-label",
+			name: "Add theorem label",
+			editorCallback: (editor) => {
+				new PromptModal(
+					this.app,
+					{ title: "Add theorem label", placeholder: "thm-weier", submitLabel: "Add" },
+					(value) => {
+						editor.replaceSelection(`{#${value}}`);
+					},
+				).open();
+			},
+		});
+
+		this.addCommand({
 			id: "insert-environment-end-mark",
 			name: `Insert environment end mark (${ENVIRONMENT_END_MARK})`,
 			editorCallback: (editor) => {
@@ -93,7 +146,7 @@ export default class LatexExporterPlugin extends Plugin {
 			id: "insert-raw-latex",
 			name: "Insert raw LaTeX",
 			editorCallback: (editor) => {
-				new RawLatexModal(this.app, (value) => {
+				new PromptModal(this.app, { title: "Insert raw LaTeX", placeholder: "\\ohnebew" }, (value) => {
 					editor.replaceSelection("`" + value + "`{=latex}");
 				}).open();
 			},

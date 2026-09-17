@@ -138,7 +138,14 @@ Two independent mechanisms, because they resolve at different times:
   syntax: label with `` $$...$$ {#eq:foo} ``, reference with `` [@eq:foo] ``.
   This renders as `\eqref{}` (parenthesized) rather than plain `\ref{}` —
   prefer it when you want that style. `[#eq:foo]` also works (plain `\ref`)
-  if you don't.
+  if you don't. The **"Reference equation"** command is "Insert reference to
+  label" filtered to `eq:...` labels and inserting `[@eq:foo]` instead.
+
+Two more commands add the labels themselves, so you don't have to type
+`{#...}` by hand: **"Add equation label"** prompts for a name and inserts
+`{#eq:name}` at the cursor (place it right after a `$$...$$` block's closing
+`$$`); **"Add theorem label"** prompts for a name and inserts `{#name}` at
+the cursor (place it in a bold-statement header).
 
 ## Math and raw LaTeX
 

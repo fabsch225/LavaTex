@@ -25,7 +25,7 @@ into this repo.
 
 ## Usage
 
-Six commands, all in the command palette:
+Nine commands, all in the command palette:
 
 - **Export current note to LaTeX** — writes `<note>.tex` next to the note.
 - **Export current note to PDF** — does the above, then runs `latexmk` on
@@ -34,6 +34,13 @@ Six commands, all in the command palette:
 - **Insert reference to label** — fuzzy-searches every `{#label}` in the
   current note (theorem headers and labelled equations alike) and inserts
   a `[#label]` shortcut at the cursor.
+- **Reference equation** — the same picker, filtered to equation labels
+  (`eq:...`) only, inserting pandoc-crossref's `[@eq:...]` instead — renders
+  as `\eqref{}` rather than plain `\ref{}` (see "Cross-references" below).
+- **Add equation label** — prompts for a name and inserts `{#eq:name}` at
+  the cursor (place it right after a `$$...$$` block's closing `$$`).
+- **Add theorem label** — prompts for a name and inserts `{#name}` at the
+  cursor (place it in a bold-statement header, e.g. after the `(title)`).
 - **Insert environment end mark (∎)** — inserts `∎`, the bold-statement
   block terminator (see below). Worth binding a hotkey to.
 - **Insert raw LaTeX** — prompts for a snippet (e.g. `\ohnebew`) and inserts
@@ -67,7 +74,8 @@ src/
     latex.ts                   spawn latexmk to compile PDF, open it
     exporter.ts                orchestrates the preprocessing passes + pandoc(+pdf)
   ui/
-    ReferenceSuggestModal.ts   fuzzy picker for the "insert reference" command
+    ReferenceSuggestModal.ts   fuzzy picker for the reference-insertion commands
+    PromptModal.ts             single-line text prompt (raw LaTeX, equation/theorem labels)
   main.ts                      wires commands + events to the pieces above
 ```
 

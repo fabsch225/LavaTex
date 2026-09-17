@@ -30,8 +30,8 @@ latex-exporter/src/
     latex.ts                     spawn latexmk to compile PDF, open it
     exporter.ts                  orchestrates the preprocessing passes + pandoc(+pdf)
   ui/
-    ReferenceSuggestModal.ts     fuzzy picker for "Insert reference to label"
-    RawLatexModal.ts             prompt for a raw LaTeX snippet to insert
+    ReferenceSuggestModal.ts     fuzzy picker for the reference-insertion commands
+    PromptModal.ts               single-line text prompt (raw LaTeX, equation/theorem labels)
   main.ts                        wires commands + events to the pieces above
 ```
 
@@ -148,3 +148,12 @@ sequenceDiagram
 bold-statement theorem header and a labelled `$$...$$ {#eq:foo}` equation
 use the identical syntax, so one scan finds both kinds, and the picker
 doesn't need to know which is which.
+
+"Reference equation" is the same flow, filtered to `label.startsWith("eq:")`
+and with `ReferenceSuggestModal`'s `format` callback swapped to
+`` `[@${label}]` `` instead of the default `` `[#${label}]` `` — pandoc-
+crossref's syntax, which renders as `\eqref{}` instead of plain `\ref{}`.
+
+"Add equation label" and "Add theorem label" don't need any of this —
+they're a `PromptModal` (a single-line text prompt, also backing "Insert
+raw LaTeX") that inserts `{#eq:name}` / `{#name}` directly at the cursor.
