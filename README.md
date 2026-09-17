@@ -5,8 +5,11 @@ production-ready LaTeX. All real export logic sits on top of `pandoc` +
 `pandoc-crossref`; nothing here re-implements what they already do (no
 regex-patching of pandoc's output, no hand-rolled LaTeX writer).
 
-See the [wiki](wiki/Home.md) for the architecture (with diagrams) and the
-full markdown-spec reference.
+See **[fabsch225.github.io/LavaTex](https://fabsch225.github.io/LavaTex/)**
+for the architecture (with diagrams) and the full markdown-spec reference.
+Its source is `site/*.md`; the site itself is built and deployed by
+`.github/workflows/pages.yml` on every push — nothing pre-built is checked
+into this repo.
 
 ## Install
 
