@@ -79,7 +79,7 @@ macro table so they render immediately in edit/preview mode too:
 ```mermaid
 flowchart LR
     FM["frontmatter\nmacros: field"]
-    Body["body {=latex} blocks\n(note-local \newcommand,\ne.g. a proof-only helper)"]
+    Body["body {=latex} blocks\n(a note-local helper macro,\ne.g. proof-only)"]
 
     FM --> Extract1["(read directly)"]
     Body --> Extract2["extractInlineMacros"]
