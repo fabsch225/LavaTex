@@ -19,10 +19,11 @@ import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
 import { expandCitations } from "./citations";
 import { resolveFrontmatterReferences } from "./frontmatterRefs";
 import { compileToPdf, openInDefaultApp } from "./latex";
-import { runPandoc } from "./pandoc";
+import { runPandoc, runPandocToMarkdown } from "./pandoc";
 import { pluginDir, vaultBasePath } from "./paths";
 
-export async function exportNoteToLatex(app: App, file: TFile, pluginId: string): Promise<string> {
+/** Runs every note-syntax -> pandoc-syntax preprocessing pass, shared by every export target. */
+async function preprocessNote(app: App, file: TFile): Promise<string> {
 	let raw = await resolveFrontmatterReferences(app, file, await app.vault.read(file));
 	raw = await expandCitations(app, file, raw);
 	const frontmatterInfo = getFrontMatterInfo(raw);
@@ -31,9 +32,11 @@ export async function exportNoteToLatex(app: App, file: TFile, pluginId: string)
 		: undefined;
 	const triggers = collectEnvironmentTriggers(frontmatter);
 
-	const preprocessed = expandReferenceShortcuts(
-		preprocessTheoremBlocks(convertAlignBlocksToRaw(raw), triggers),
-	);
+	return expandReferenceShortcuts(preprocessTheoremBlocks(convertAlignBlocksToRaw(raw), triggers));
+}
+
+export async function exportNoteToLatex(app: App, file: TFile, pluginId: string): Promise<string> {
+	const preprocessed = await preprocessNote(app, file);
 
 	const base = vaultBasePath(app);
 	const dir = pluginDir(app, pluginId);
@@ -65,4 +68,26 @@ export async function exportNoteToPdf(app: App, file: TFile, pluginId: string): 
 	});
 	await openInDefaultApp(pdfPath);
 	return pdfPath;
+}
+
+/** Exports the note to plain markdown: same preprocessing as LaTeX, but no template/theorems.lua. */
+export async function exportNoteToMarkdown(app: App, file: TFile): Promise<string> {
+	const preprocessed = await preprocessNote(app, file);
+
+	const base = vaultBasePath(app);
+	const outputPath = path.join(base, file.parent?.path ?? "", `${file.basename}.exported.md`);
+	const tmpInputPath = path.join(os.tmpdir(), `latex-exporter-${process.pid}-${Date.now()}.md`);
+
+	await fs.writeFile(tmpInputPath, preprocessed, "utf8");
+	try {
+		await runPandocToMarkdown({
+			inputPath: tmpInputPath,
+			outputPath,
+			cwd: path.dirname(path.join(base, file.path)),
+		});
+	} finally {
+		await fs.rm(tmpInputPath, { force: true });
+	}
+
+	return outputPath;
 }

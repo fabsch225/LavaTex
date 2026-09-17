@@ -22,3 +22,4 @@ test-vault/**/*.log
 test-vault/**/*.out
 test-vault/**/*.pdf
 test-vault/**/*.tex
+test-vault/**/*.exported.md

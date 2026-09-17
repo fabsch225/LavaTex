@@ -25,12 +25,23 @@ into this repo.
 
 ## Usage
 
-Nine commands, all in the command palette:
+Ten commands, all in the command palette:
 
 - **Export current note to LaTeX** — writes `<note>.tex` next to the note.
 - **Export current note to PDF** — does the above, then runs `latexmk` on
   the result and opens the compiled `<note>.pdf` in your OS's default
   viewer.
+- **Export plain Markdown** — writes `<note>.exported.md`: the same
+  preprocessing as the LaTeX export (theorem blocks, align blocks,
+  citations, references all resolved), but handed to pandoc's markdown
+  writer instead of the LaTeX template — no `pandoc`/`theorems.lua`
+  environment filter involved. Bold-statement blocks come out as plain
+  pandoc fenced divs (`::: {.theorem title="..."} ... :::`), which any
+  pandoc-aware reader still renders sensibly. What has no plain-markdown
+  equivalent stays as raw LaTeX: theorem/equation `\ref{}` and `\cite{}`
+  calls only resolve at LaTeX-compile time, so they're untouched; equation
+  *numbers* still work, since pandoc-crossref numbers/cross-references
+  equations for any output format, not just LaTeX.
 - **Insert reference to label** — fuzzy-searches every `{#label}` in the
   current note (theorem headers and labelled equations alike) and inserts
   a `[#label]` shortcut at the cursor.
@@ -70,9 +81,9 @@ src/
     pathEnv.ts                 PATH augmentation shared by pandoc.ts/latex.ts
     frontmatterRefs.ts         resolve [[wikilink]] frontmatter fields to referenced notes
     citations.ts               &[[Source]] -> raw \cite{key} span + assembled bibliography-raw
-    pandoc.ts                  spawn pandoc with the fixed flag set
+    pandoc.ts                  spawn pandoc: LaTeX (template+theorems.lua) or plain markdown
     latex.ts                   spawn latexmk to compile PDF, open it
-    exporter.ts                orchestrates the preprocessing passes + pandoc(+pdf)
+    exporter.ts                orchestrates the preprocessing passes + pandoc(+pdf/md)
   ui/
     ReferenceSuggestModal.ts   fuzzy picker for the reference-insertion commands
     PromptModal.ts             single-line text prompt (raw LaTeX, equation/theorem labels)

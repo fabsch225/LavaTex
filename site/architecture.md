@@ -26,9 +26,9 @@ latex-exporter/src/
     pathEnv.ts                   PATH augmentation shared by pandoc.ts/latex.ts
     frontmatterRefs.ts           resolve [[wikilink]] frontmatter fields to referenced notes
     citations.ts                 &[[Source]] -> raw \cite{key} span + assembled bibliography-raw
-    pandoc.ts                    spawn pandoc with the fixed flag set
+    pandoc.ts                    spawn pandoc: LaTeX (template+theorems.lua) or plain markdown
     latex.ts                     spawn latexmk to compile PDF, open it
-    exporter.ts                  orchestrates the preprocessing passes + pandoc(+pdf)
+    exporter.ts                  orchestrates the preprocessing passes + pandoc(+pdf/md)
   ui/
     ReferenceSuggestModal.ts     fuzzy picker for the reference-insertion commands
     PromptModal.ts               single-line text prompt (raw LaTeX, equation/theorem labels)
@@ -81,6 +81,28 @@ so it's rendered exactly like ordinary body text would be.
 Numbered, cross-referenceable equations (`$$...$$ {#eq:foo}`, `[@eq:foo]`)
 are handled entirely by `pandoc-crossref` — a well-maintained, purpose-built
 tool for exactly that, not reimplemented here.
+
+### Export: note → plain markdown
+
+"Export plain Markdown" runs the exact same preprocessing (through
+`expandReferenceShortcuts`), then hands the result to `runPandocToMarkdown`
+instead of `runPandoc`: no `--template`, no `--lua-filter`. Skipping
+`theorems.lua` is deliberate — that filter's whole job is turning a fenced
+div into a raw `\begin{env}...\end{env}` LaTeX block, which is exactly the
+kind of thing a *plain*-markdown export shouldn't produce. Left as a fenced
+div (`::: {.theorem title="..."} ... :::`), pandoc's markdown writer
+round-trips it natively, so the structure survives without any LaTeX
+toolchain to render it.
+
+`--filter pandoc-crossref` stays on, since it numbers and cross-references
+equations for any output format, not just LaTeX — so `[@eq:foo]` still
+becomes real, readable text (`eq. 3`), not raw markup. `\ref{}`/`\cite{}`
+(from `expandReferenceShortcuts`/`citations.ts`) have no such luck: they
+only resolve at LaTeX-compile time, so they pass through as the raw
+`` `\ref{...}`{=latex} ``/`` `\cite{...}`{=latex} `` spans pandoc's markdown
+writer already emits for anything it doesn't understand — an honest gap,
+not a bug, since there's no LaTeX compiler in this path to resolve them
+against.
 
 ## Live preview: math macros in Obsidian's own editor
 

@@ -1,6 +1,6 @@
 import { Notice, Plugin, type TFile, getFrontMatterInfo, parseYaml } from "obsidian";
 
-import { exportNoteToLatex, exportNoteToPdf } from "./export/exporter";
+import { exportNoteToLatex, exportNoteToMarkdown, exportNoteToPdf } from "./export/exporter";
 import { resolveFrontmatterReferences } from "./export/frontmatterRefs";
 import { extractInlineMacros } from "./latex/inlineMacros";
 import { collectLabels } from "./latex/labelCollector";
@@ -58,6 +58,21 @@ export default class LatexExporterPlugin extends Plugin {
 				}
 				if (!checking) {
 					void this.runPdfExport(file);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "export-note-to-markdown",
+			name: "Export plain Markdown",
+			checkCallback: (checking: boolean) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || file.extension !== "md") {
+					return false;
+				}
+				if (!checking) {
+					void this.runMarkdownExport(file);
 				}
 				return true;
 			},
@@ -194,6 +209,17 @@ export default class LatexExporterPlugin extends Plugin {
 			console.error(err);
 			const message = err instanceof Error ? err.message : String(err);
 			new Notice(`PDF export failed: ${message.split("\n")[0]}`);
+		}
+	}
+
+	private async runMarkdownExport(file: TFile): Promise<void> {
+		try {
+			const outputPath = await exportNoteToMarkdown(this.app, file);
+			new Notice(`Exported to ${outputPath.split("/").pop()}`);
+		} catch (err) {
+			console.error(err);
+			const message = err instanceof Error ? err.message : String(err);
+			new Notice(`Markdown export failed: ${message.split("\n")[0]}`);
 		}
 	}
 }
