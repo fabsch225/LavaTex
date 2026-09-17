@@ -31,17 +31,26 @@ Ten commands, all in the command palette:
 - **Export current note to PDF** — does the above, then runs `latexmk` on
   the result and opens the compiled `<note>.pdf` in your OS's default
   viewer.
-- **Export plain Markdown** — writes `<note>.exported.md`: the same
-  preprocessing as the LaTeX export (theorem blocks, align blocks,
-  citations, references all resolved), but handed to pandoc's markdown
-  writer instead of the LaTeX template — no `pandoc`/`theorems.lua`
-  environment filter involved. Bold-statement blocks come out as plain
-  pandoc fenced divs (`::: {.theorem title="..."} ... :::`), which any
-  pandoc-aware reader still renders sensibly. What has no plain-markdown
-  equivalent stays as raw LaTeX: theorem/equation `\ref{}` and `\cite{}`
-  calls only resolve at LaTeX-compile time, so they're untouched; equation
-  *numbers* still work, since pandoc-crossref numbers/cross-references
-  equations for any output format, not just LaTeX.
+- **Export plain Markdown** — writes `<note>.exported.md`. Doesn't involve
+  pandoc at all (unlike every other export target): bold-statement headers,
+  `$$...$$` math, and `\begin{align}` are already valid, readable markdown,
+  so they're left exactly as written. What this command actually does:
+  - `&[[Source]]` citations become a readable `[marker]` (the source's
+    `\bibitem[marker]{...}` short label, or a running number) plus a
+    generated `## Bibliography` section — not a raw `\cite{}` span.
+  - The `∎` block terminator and `` `...`{=latex} `` raw-LaTeX wrapper
+    syntax are stripped (the LaTeX itself is kept where there's no plain
+    equivalent, e.g. a local `\newcommand` — just not the pandoc fence
+    noise around it).
+  - The `macros:` field (if any) is inserted as a math block near the top,
+    so its custom commands are visible instead of silently dropped —
+    frontmatter is otherwise invisible to anything reading plain markdown.
+  - Frontmatter is trimmed to `title`/`author`/`date`; `preamble`,
+    `theorems`, and LaTeX layout knobs have no meaning here.
+
+  `[#label]`/`\ref{}` theorem cross-references have no plain-markdown
+  equivalent (amsthm numbering only exists after a LaTeX compile) and are
+  left as-is — an honest limitation, not a bug.
 - **Insert reference to label** — fuzzy-searches every `{#label}` in the
   current note (theorem headers and labelled equations alike) and inserts
   a `[#label]` shortcut at the cursor.
@@ -74,6 +83,7 @@ src/
     referenceShortcuts.ts       [#label] -> raw \ref{label} span         (pure)
     inlineMacros.ts             \newcommand in body {=latex} blocks -> text (pure)
     labelCollector.ts           note text -> every {#label} + context    (pure)
+    markdownNormalizer.ts       strip ∎/{=latex} noise for the plain-markdown export (pure)
   obsidian-math/
     mathJaxMacros.ts           feed macros: text to Obsidian's live MathJax renderer
   export/
@@ -81,9 +91,10 @@ src/
     pathEnv.ts                 PATH augmentation shared by pandoc.ts/latex.ts
     frontmatterRefs.ts         resolve [[wikilink]] frontmatter fields to referenced notes
     citations.ts               &[[Source]] -> raw \cite{key} span + assembled bibliography-raw
-    pandoc.ts                  spawn pandoc: LaTeX (template+theorems.lua) or plain markdown
+    markdownCitations.ts       &[[Source]] -> readable [marker] + bibliography (markdown export)
+    pandoc.ts                  spawn pandoc with the fixed flag set (LaTeX export only)
     latex.ts                   spawn latexmk to compile PDF, open it
-    exporter.ts                orchestrates the preprocessing passes + pandoc(+pdf/md)
+    exporter.ts                orchestrates the preprocessing passes + pandoc/latexmk/markdown
   ui/
     ReferenceSuggestModal.ts   fuzzy picker for the reference-insertion commands
     PromptModal.ts             single-line text prompt (raw LaTeX, equation/theorem labels)
