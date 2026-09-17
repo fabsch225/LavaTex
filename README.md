@@ -25,12 +25,19 @@ into this repo.
 
 ## Usage
 
-Ten commands, all in the command palette:
+Twelve commands, all in the command palette:
 
 - **Export current note to LaTeX** — writes `<note>.tex` next to the note.
 - **Export current note to PDF** — does the above, then runs `latexmk` on
   the result and opens the compiled `<note>.pdf` in your OS's default
   viewer.
+- **Export project to LaTeX** / **Export project to PDF** — the same, but for
+  a *master* note whose frontmatter has a `chapters:` list of `[[wikilinks]]`
+  to other notes, assembled into one `\documentclass{report}` document
+  (chapters, shared bibliography/theorem numbering, table of contents,
+  `\appendix` support) instead of one `.tex` per note. Only appear in the
+  command palette when the active note actually has a `chapters:` field —
+  see "Multi-chapter projects" below.
 - **Export plain Markdown** — writes `<note>.exported.md`. Doesn't involve
   pandoc at all (unlike every other export target): bold-statement headers,
   `$$...$$` math, and `\begin{align}` are already valid, readable markdown,
@@ -80,6 +87,7 @@ src/
     theoremEnvironments.ts      frontmatter -> {trigger word: env id}    (pure)
     theoremBlockPreprocessor.ts bold-statement block -> pandoc fenced div (pure)
     rawEnvironments.ts          $$\begin{align}...\end{align}$$ -> {=latex} raw block (pure)
+    tikzBlocks.ts               ```tikz``` block (+ optional Figure: caption) -> {=latex} raw block (pure)
     referenceShortcuts.ts       [#label] -> raw \ref{label} span         (pure)
     inlineMacros.ts             \newcommand in body {=latex} blocks -> text (pure)
     labelCollector.ts           note text -> every {#label} + context    (pure)
@@ -95,6 +103,7 @@ src/
     pandoc.ts                  spawn pandoc with the fixed flag set (LaTeX export only)
     latex.ts                   spawn latexmk to compile PDF, open it
     exporter.ts                orchestrates the preprocessing passes + pandoc/latexmk/markdown
+    project.ts                 multi-chapter assembly: chapters: [[wikilinks]] -> one pandoc pass
   ui/
     ReferenceSuggestModal.ts   fuzzy picker for the reference-insertion commands
     PromptModal.ts             single-line text prompt (raw LaTeX, equation/theorem labels)
@@ -236,6 +245,85 @@ opens the statement, an end-of-proof-style mark (`∎`) closes it.
 
 Math (`$...$`, `$$...$$`) is passed to pandoc as-is — never reinterpreted —
 so any macro from `macros:` just works in the exported `.tex`.
+
+### Multi-chapter projects
+
+Everything above is per-note — the right scale for a single paper, but not
+for a thesis with a dozen chapters that need to share one bibliography, one
+set of theorem counters, and one table of contents. **Export project to
+LaTeX**/**PDF** cover that: point a *master* note's `chapters:` frontmatter
+at the chapter notes, in order, and they're assembled into one
+`\documentclass{report}` document instead of exported one at a time.
+
+```yaml
+---
+title: Die geometrische Brownsche Bewegung und Anwendungen
+author: Fabian Schuller
+preamble: "[[preamble]]"
+theorems: "[[theorems]]"
+chapters:
+  - "[[00 Motivation]]"
+  - "[[10 Stochastische Prozesse]]"
+  - "[[70 Anhang]]"
+appendix-from: "[[70 Anhang]]"
+---
+
+Optional preface/abstract text, placed before the first chapter.
+```
+
+- `chapters` — required, a non-empty list of `[[wikilinks]]` to chapter
+  notes, in document order. Each chapter note is a plain note (its own
+  `#`-heading becomes `\chapter{...}`, via `--top-level-division=chapter`) —
+  nothing distinguishes "a chapter note" from any other note except being
+  listed here.
+- `appendix-from` — optional; a `[[wikilink]]` to the chapter that starts the
+  appendix. A raw `\appendix` is inserted immediately before it, so it and
+  every chapter after it are lettered (Appendix A, B, ...) instead of
+  numbered — same mechanism `\begin{appendices}` gets you by hand.
+- `documentclass` — defaults to `report`; set to `book` for front/main/back
+  matter with `\part`s, or anything else your preamble supports.
+- `division` — the pandoc top-level-division; defaults to `chapter`.
+- `numberwithin` — what `\numberwithin{equation}{...}` numbers equations by;
+  defaults to `section` (same as single-note export). A thesis with numbered
+  equations per chapter would set this to `chapter`.
+- `toc` — defaults to `true` for project export (`false` to omit); single-
+  note export leaves it unset, so `\tableofcontents` is opt-in there.
+- Everything a single note's frontmatter already supports (`preamble`,
+  `macros`, `theorems`, `title`/`author`/`date`, layout knobs, `refname`/
+  `proofname`) works identically here, declared once on the master note and
+  shared by every chapter.
+- Citations (`&[[Source]]`) work across chapters exactly as within one note:
+  a source cited from two different chapters gets one `\cite{}` key and one
+  bibliography entry, and the assembled bibliography follows first-cited-
+  across-the-whole-project order.
+- The **Export project to…** commands only appear in the command palette
+  when the active note's frontmatter actually has a `chapters:` list — run
+  them from the master note, not from an individual chapter.
+
+### TikZ diagrams
+
+For projects with figures — plots, commutative diagrams, decision trees —
+a ` ```tikz ``` ` fenced block (the same plain syntax the community
+[obsidian-tikzjax](https://github.com/fabsch225/obsidian-tikzjax) plugin
+renders live via TikZJax, if it's installed too) is passed through as raw
+LaTeX instead of a literal code block:
+
+```tikz
+\begin{tikzpicture}
+\draw[-Stealth] (0,0) -- (2,1);
+\end{tikzpicture}
+```
+Figure: A TikZ diagram, exported as a numbered figure. {#fig:comm}
+
+A `Figure:` line right after the closing fence — same shape as a
+bold-statement header's `(title) {#label}` — promotes the block to a
+captioned, labelled `figure` environment, numbered and cross-referenceable
+with `[#fig:comm]` like anything else with a `{#label}`. Without a `Figure:`
+line, the `\begin{tikzpicture}...\end{tikzpicture}` is emitted unwrapped,
+for a diagram meant to sit inline rather than as a numbered float.
+
+Needs `\usepackage{tikz}` (and any `\usetikzlibrary{...}`) in `preamble:` —
+not added automatically, since not every project uses TikZ.
 
 ## Live macros in Obsidian's math mode
 

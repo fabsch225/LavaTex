@@ -1,11 +1,38 @@
-\documentclass[$if(fontsize)$$fontsize$$else$12pt$endif$]{article}
+\documentclass[$if(fontsize)$$fontsize$$else$12pt$endif$]{$if(documentclass)$$documentclass$$else$article$endif$}
 
 \usepackage[margin=$if(margin)$$margin$$else$1in$endif$]{geometry}
 \usepackage[utf8]{inputenc}
+\usepackage{setspace}
+% Every Markdown pipe table pandoc emits uses `longtable` by default, with
+% column widths computed via `calc`'s `\real{}`.
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{calc}
 
-$if(preamble)$
-$preamble$
-$endif$
+% Pandoc's LaTeX writer emits `\pandocbounded{\includegraphics{...}}` for
+% every image (scales it to fit the text width/height) but only *defines*
+% \pandocbounded itself when using its own default template — since this is
+% a custom one, redefine it here so any note with an image still compiles.
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{%
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@
+    \let\@tempa\@tempb
+  \fi
+  \ifdim\@tempa\p@<\p@
+    \scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else
+    \usebox\pandoc@box%
+  \fi
+}
+\makeatother
+
+$header-includes$
 
 \setstretch{$if(linestretch)$$linestretch$$else$1.25$endif$}
 
@@ -21,17 +48,19 @@ $else$
 $endif$
 $endfor$
 
-\numberwithin{equation}{section}
+\numberwithin{equation}{$if(numberwithin)$$numberwithin$$else$section$endif$}
 
 $if(refname)$
+% \refname is what `thebibliography` looks up under article; \bibname is
+% the equivalent for report/book. \providecommand guards whichever the
+% class doesn't already define, so this works for either.
+\providecommand{\refname}{}
+\providecommand{\bibname}{}
 \renewcommand{\refname}{$refname$}
+\renewcommand{\bibname}{$refname$}
 $endif$
 $if(proofname)$
 \renewcommand{\proofname}{$proofname$}
-$endif$
-
-$if(macros)$
-$macros$
 $endif$
 
 \title{$title$}
@@ -41,10 +70,13 @@ $endif$
 \begin{document}
 \maketitle
 
+$if(toc)$
+\tableofcontents
+\newpage
+$endif$
+
 $body$
 
-$if(bibliography-raw)$
-$bibliography-raw$
-$endif$
+$include-after$
 
 \end{document}

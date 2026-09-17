@@ -124,6 +124,91 @@ Rules:
 - The command **"Insert environment end mark (∎)"** inserts the character if
   you don't want to type/paste it — worth a hotkey.
 
+## TikZ diagrams
+
+A ` ```tikz ``` ` fenced block — the same plain syntax the community
+[obsidian-tikzjax](https://github.com/fabsch225/obsidian-tikzjax) plugin
+renders live via TikZJax, if it's installed too — is passed through as raw
+LaTeX instead of a literal code block:
+
+```tikz
+\begin{tikzpicture}
+\draw[-Stealth] (0,0) -- (2,1);
+\end{tikzpicture}
+```
+Figure: A TikZ diagram, exported as a numbered figure. {#fig:comm}
+
+A `Figure:` line right after the closing fence — same shape as a
+bold-statement header's `(title) {#label}` — promotes the block to a
+captioned, labelled `figure` environment, numbered and cross-referenceable
+with `[#fig:comm]` like anything else with a `{#label}`. Without a `Figure:`
+line, the `\begin{tikzpicture}...\end{tikzpicture}` is emitted unwrapped, for
+a diagram meant to sit inline rather than as a numbered float.
+
+Needs `\usepackage{tikz}` (and any `\usetikzlibrary{...}`) in `preamble:` —
+not added automatically, since not every project uses TikZ.
+
+## Code listings
+
+A ` ```r ``` ` fenced block is passed through as a raw `lstlisting`
+environment instead of a literal pandoc code block:
+
+```r
+n <- rnorm(10, mean = 0, sd = 1)
+mean(n)
+```
+
+Pandoc's own fenced-code handling goes through skylighting (its own
+preamble macros, its own styling), which doesn't match a `listings`-based
+project. Since `\lstset{...}` applies globally, the emitted environment
+carries no `[language=...]` of its own — set that once via `\lstset` in
+`preamble:` (or a shared macros note), same as any hand-written thesis
+already does. Needs `\usepackage{listings}` in `preamble:` — not added
+automatically.
+
+## Multi-chapter projects
+
+Everything above is per-note. **Export project to LaTeX**/**PDF** assembles
+several notes into one `\documentclass{report}` document instead: point a
+*master* note's `chapters:` frontmatter at the chapter notes, in order.
+
+```yaml
+---
+title: Die geometrische Brownsche Bewegung und Anwendungen
+author: Fabian Schuller
+preamble: "[[preamble]]"
+theorems: "[[theorems]]"
+chapters:
+  - "[[00 Motivation]]"
+  - "[[10 Stochastische Prozesse]]"
+  - "[[70 Anhang]]"
+appendix-from: "[[70 Anhang]]"
+---
+
+Optional preface/abstract text, placed before the first chapter.
+```
+
+| Field | Meaning |
+|---|---|
+| `chapters` | Required. Non-empty list of `[[wikilinks]]` to chapter notes, in order. Each note's own `#`-heading becomes `\chapter{...}` (`--top-level-division=chapter`) |
+| `appendix-from` | `[[wikilink]]` to the chapter that starts the appendix; a raw `\appendix` is inserted immediately before it |
+| `documentclass` | Defaults to `report`; `book` for `\part`-structured front/main/back matter |
+| `division` | pandoc top-level-division; defaults to `chapter` |
+| `numberwithin` | What `\numberwithin{equation}{...}` numbers by; defaults to `section` (a thesis numbering equations per chapter sets this to `chapter`) |
+| `toc` | Defaults to `true` (project export only; single-note export leaves it unset — opt in with `toc: true` there too) |
+
+Everything a single note's frontmatter supports — `preamble`, `macros`,
+`theorems`, `title`/`author`/`date`, layout knobs, `refname`/`proofname` —
+works identically, declared once on the master note and shared by every
+chapter. `&[[Source]]` citations work across chapters exactly as within one
+note: a source cited from two different chapters gets one `\cite{}` key and
+one bibliography entry, in first-cited-across-the-whole-project order.
+
+The master note's own body (if non-empty) is treated as front matter content
+— an abstract, a dedication — placed before the first chapter. The **Export
+project to…** commands only appear in the command palette when the active
+note's frontmatter has a `chapters:` list — run them from the master note.
+
 ## Cross-references
 
 Two independent mechanisms, because they resolve at different times:

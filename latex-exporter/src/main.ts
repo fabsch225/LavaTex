@@ -2,6 +2,7 @@ import { Notice, Plugin, type TFile, getFrontMatterInfo, parseYaml } from "obsid
 
 import { exportNoteToLatex, exportNoteToMarkdown, exportNoteToPdf } from "./export/exporter";
 import { resolveFrontmatterReferences } from "./export/frontmatterRefs";
+import { exportProjectToLatex, exportProjectToPdf } from "./export/project";
 import { extractInlineMacros } from "./latex/inlineMacros";
 import { collectLabels } from "./latex/labelCollector";
 import { registerMathMacros } from "./obsidian-math/mathJaxMacros";
@@ -58,6 +59,44 @@ export default class LatexExporterPlugin extends Plugin {
 				}
 				if (!checking) {
 					void this.runPdfExport(file);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "export-project-to-latex",
+			name: "Export project to LaTeX",
+			checkCallback: (checking: boolean) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || file.extension !== "md") {
+					return false;
+				}
+				const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+				if (!frontmatter || !Array.isArray(frontmatter["chapters"])) {
+					return false;
+				}
+				if (!checking) {
+					void this.runProjectExport(file);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "export-project-to-pdf",
+			name: "Export project to PDF",
+			checkCallback: (checking: boolean) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || file.extension !== "md") {
+					return false;
+				}
+				const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+				if (!frontmatter || !Array.isArray(frontmatter["chapters"])) {
+					return false;
+				}
+				if (!checking) {
+					void this.runProjectPdfExport(file);
 				}
 				return true;
 			},
@@ -209,6 +248,31 @@ export default class LatexExporterPlugin extends Plugin {
 			console.error(err);
 			const message = err instanceof Error ? err.message : String(err);
 			new Notice(`PDF export failed: ${message.split("\n")[0]}`);
+		}
+	}
+
+	private async runProjectExport(file: TFile): Promise<void> {
+		try {
+			const outputPath = await exportProjectToLatex(this.app, file, this.manifest.id);
+			new Notice(`Exported project to ${outputPath.split("/").pop()}`);
+		} catch (err) {
+			console.error(err);
+			const message = err instanceof Error ? err.message : String(err);
+			new Notice(`Project export failed: ${message.split("\n")[0]}`);
+		}
+	}
+
+	private async runProjectPdfExport(file: TFile): Promise<void> {
+		const notice = new Notice("Compiling project PDF…", 0);
+		try {
+			const pdfPath = await exportProjectToPdf(this.app, file, this.manifest.id);
+			notice.hide();
+			new Notice(`Exported to ${pdfPath.split("/").pop()}`);
+		} catch (err) {
+			notice.hide();
+			console.error(err);
+			const message = err instanceof Error ? err.message : String(err);
+			new Notice(`Project PDF export failed: ${message.split("\n")[0]}`);
 		}
 	}
 

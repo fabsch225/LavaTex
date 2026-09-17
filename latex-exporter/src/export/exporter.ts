@@ -15,6 +15,8 @@ import * as path from "path";
 import { collectEnvironmentTriggers } from "../latex/theoremEnvironments";
 import { preprocessTheoremBlocks } from "../latex/theoremBlockPreprocessor";
 import { convertAlignBlocksToRaw } from "../latex/rawEnvironments";
+import { convertCodeBlocksToRaw } from "../latex/codeBlocks";
+import { convertTikzBlocksToRaw } from "../latex/tikzBlocks";
 import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
 import { collapseBlankLines, stripEnvironmentEndMarks, unwrapRawLatexSpans } from "../latex/markdownNormalizer";
 import { expandCitations } from "./citations";
@@ -23,6 +25,7 @@ import { compileToPdf, openInDefaultApp } from "./latex";
 import { expandCitationsForMarkdown } from "./markdownCitations";
 import { runPandoc } from "./pandoc";
 import { pluginDir, vaultBasePath } from "./paths";
+import { extractRawLatexFrontmatter, writeRawLatexInclude } from "./rawLatexFrontmatter";
 
 /** Runs every note-syntax -> pandoc-syntax preprocessing pass, shared by every export target. */
 async function preprocessNote(app: App, file: TFile): Promise<string> {
@@ -34,18 +37,42 @@ async function preprocessNote(app: App, file: TFile): Promise<string> {
 		: undefined;
 	const triggers = collectEnvironmentTriggers(frontmatter);
 
-	return expandReferenceShortcuts(preprocessTheoremBlocks(convertAlignBlocksToRaw(raw), triggers));
+	return expandReferenceShortcuts(
+		preprocessTheoremBlocks(convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(raw))), triggers),
+	);
 }
 
 export async function exportNoteToLatex(app: App, file: TFile, pluginId: string): Promise<string> {
 	const preprocessed = await preprocessNote(app, file);
+
+	const info = getFrontMatterInfo(preprocessed);
+	const frontmatter = info.exists ? ((parseYaml(info.frontmatter) as Record<string, unknown>) ?? {}) : {};
+
+	// `chapters:` is also a reserved pandoc-crossref metadata key (a boolean,
+	// "number figures per chapter") — our own `chapters:` (a list of chapter
+	// notes) is only ever stripped on the *project* export path. Sent through
+	// here instead, it survives into pandoc's metadata verbatim and
+	// pandoc-crossref crashes on the type mismatch with an opaque Haskell
+	// exception. Catch the mistake here instead, with an actionable message.
+	if (Array.isArray(frontmatter["chapters"])) {
+		throw new Error(
+			'This note has a `chapters:` list — use "Export project to LaTeX"/"Export project to PDF" instead.',
+		);
+	}
+
+	const { frontmatter: strippedFrontmatter, headerIncludes, afterBody } = extractRawLatexFrontmatter(frontmatter);
+	const finalText = info.exists
+		? "---\n" + stringifyYaml(strippedFrontmatter) + "---\n" + preprocessed.slice(info.contentStart)
+		: preprocessed;
 
 	const base = vaultBasePath(app);
 	const dir = pluginDir(app, pluginId);
 	const outputPath = path.join(base, file.parent?.path ?? "", `${file.basename}.tex`);
 	const tmpInputPath = path.join(os.tmpdir(), `latex-exporter-${process.pid}-${Date.now()}.md`);
 
-	await fs.writeFile(tmpInputPath, preprocessed, "utf8");
+	await fs.writeFile(tmpInputPath, finalText, "utf8");
+	const headerIncludesPath = await writeRawLatexInclude(headerIncludes, "header");
+	const afterBodyPath = await writeRawLatexInclude(afterBody, "afterbody");
 	try {
 		await runPandoc({
 			inputPath: tmpInputPath,
@@ -53,9 +80,13 @@ export async function exportNoteToLatex(app: App, file: TFile, pluginId: string)
 			templatePath: path.join(dir, "pandoc", "template.latex"),
 			luaFilterPath: path.join(dir, "pandoc", "theorems.lua"),
 			cwd: path.dirname(path.join(base, file.path)),
+			headerIncludesPath,
+			afterBodyPath,
 		});
 	} finally {
 		await fs.rm(tmpInputPath, { force: true });
+		if (headerIncludesPath) await fs.rm(headerIncludesPath, { force: true });
+		if (afterBodyPath) await fs.rm(afterBodyPath, { force: true });
 	}
 
 	return outputPath;

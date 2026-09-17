@@ -14,16 +14,15 @@ import { readNote, resolveLinkpath } from "./frontmatterRefs";
 
 const CITATION = /&\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g;
 
-export async function expandCitations(app: App, sourceFile: TFile, rawText: string): Promise<string> {
-	const matches = [...rawText.matchAll(CITATION)];
-	if (matches.length === 0) {
-		return rawText;
-	}
-
-	const keyByLinkpath = new Map<string, string>();
-	const bibitemsByKey = new Map<string, string>();
-
-	for (const match of matches) {
+/** Scans one file's text for `&[[Source]]` citations, adding any newly-seen ones to the shared maps. */
+async function collectCitations(
+	app: App,
+	sourceFile: TFile,
+	rawText: string,
+	keyByLinkpath: Map<string, string>,
+	bibitemsByKey: Map<string, string>,
+): Promise<void> {
+	for (const match of rawText.matchAll(CITATION)) {
 		const linkpath = match[1].trim();
 		if (keyByLinkpath.has(linkpath)) {
 			continue;
@@ -35,24 +34,60 @@ export async function expandCitations(app: App, sourceFile: TFile, rawText: stri
 		const { frontmatter } = await readNote(app, target);
 		const key = typeof frontmatter["key"] === "string" ? (frontmatter["key"] as string) : target.basename;
 		keyByLinkpath.set(linkpath, key);
-		if (typeof frontmatter["bibitem"] === "string") {
+		if (typeof frontmatter["bibitem"] === "string" && !bibitemsByKey.has(key)) {
 			bibitemsByKey.set(key, (frontmatter["bibitem"] as string).trim());
 		}
 	}
+}
 
-	let text = rawText.replace(CITATION, (whole, rawLinkpath: string) => {
+function substituteCitations(text: string, keyByLinkpath: ReadonlyMap<string, string>): string {
+	return text.replace(CITATION, (whole, rawLinkpath: string) => {
 		const key = keyByLinkpath.get(rawLinkpath.trim());
 		return key ? "`\\cite{" + key + "}`{=latex}" : whole;
 	});
+}
 
+function assembleBibliography(bibitemsByKey: ReadonlyMap<string, string>): string {
+	return "\\begin{thebibliography}{9}\n" + [...bibitemsByKey.values()].join("\n\n") + "\n\\end{thebibliography}";
+}
+
+export async function expandCitations(app: App, sourceFile: TFile, rawText: string): Promise<string> {
+	const keyByLinkpath = new Map<string, string>();
+	const bibitemsByKey = new Map<string, string>();
+	await collectCitations(app, sourceFile, rawText, keyByLinkpath, bibitemsByKey);
+
+	const text = substituteCitations(rawText, keyByLinkpath);
 	if (bibitemsByKey.size === 0) {
 		return text;
 	}
 
 	const info = getFrontMatterInfo(text);
 	const frontmatter = (info.exists ? (parseYaml(info.frontmatter) as Record<string, unknown>) : undefined) ?? {};
-	frontmatter["bibliography-raw"] =
-		"\\begin{thebibliography}{9}\n" + [...bibitemsByKey.values()].join("\n\n") + "\n\\end{thebibliography}";
+	frontmatter["bibliography-raw"] = assembleBibliography(bibitemsByKey);
 
 	return "---\n" + stringifyYaml(frontmatter) + "---\n" + text.slice(info.contentStart);
+}
+
+/**
+ * Same expansion, but sharing one key/bibitem table across every file in a
+ * multi-chapter project — so a source cited from two different chapters
+ * gets one `\cite{}` key and one bibliography entry, not two, and citation
+ * order (and therefore bibliography order) follows first-cited-across-the-
+ * whole-project rather than per-file.
+ */
+export async function expandCitationsAcrossFiles(
+	app: App,
+	entries: { file: TFile; text: string }[],
+): Promise<{ texts: string[]; bibliographyRaw: string }> {
+	const keyByLinkpath = new Map<string, string>();
+	const bibitemsByKey = new Map<string, string>();
+
+	for (const entry of entries) {
+		await collectCitations(app, entry.file, entry.text, keyByLinkpath, bibitemsByKey);
+	}
+
+	const texts = entries.map((entry) => substituteCitations(entry.text, keyByLinkpath));
+	const bibliographyRaw = bibitemsByKey.size > 0 ? assembleBibliography(bibitemsByKey) : "";
+
+	return { texts, bibliographyRaw };
 }

@@ -22,4 +22,13 @@ test-vault/**/*.log
 test-vault/**/*.out
 test-vault/**/*.pdf
 test-vault/**/*.tex
+test-vault/**/*.toc
 test-vault/**/*.exported.md
+
+# Local reference checkouts, not part of the shipped system: the actual
+# Bachelor's thesis LaTeX source (transcribed into test-vault/GBM-Thesis/)
+# and a fork of the community obsidian-tikzjax plugin (built and installed
+# into test-vault/.obsidian/plugins/ for local testing, itself gitignored
+# above). Both are their own git repos with their own history.
+repos/gbm/
+repos/obsidian-tikzjax/
