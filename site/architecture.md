@@ -44,9 +44,9 @@ up.
 
 ```mermaid
 flowchart LR
-    Note["note.md\n(bold statements, macros:,\n$$\\begin{align}...\\end{align}$$, [#label])"]
+    Note["note.md\n(bold statements, macros:,\n$$\begin{align}...\end{align}$$, [#label])"]
     Note --> FmRefs["resolveFrontmatterReferences\n([[wikilink]] preamble/macros/\nbibliography/theorems -> inlined)"]
-    FmRefs --> Cite["expandCitations\n(&[[Source]] -> \\cite{key},\nbibitem: -> assembled bibliography-raw)"]
+    FmRefs --> Cite["expandCitations\n(&[[Source]] -> \cite{key},\nbibitem: -> assembled bibliography-raw)"]
     Cite --> Align["convertAlignBlocksToRaw"]
     Align --> Blocks["preprocessTheoremBlocks\n(frontmatter theorems: -> env ids)"]
     Blocks --> Refs["expandReferenceShortcuts"]
@@ -92,7 +92,7 @@ macro table so they render immediately in edit/preview mode too:
 ```mermaid
 flowchart LR
     FM["frontmatter\nmacros: field"]
-    Body["body {=latex} blocks\n(note-local \\newcommand,\ne.g. a proof-only helper)"]
+    Body["body {=latex} blocks\n(a note-local helper macro,\ne.g. proof-only)"]
 
     FM --> Extract1["(read directly)"]
     Body --> Extract2["extractInlineMacros"]

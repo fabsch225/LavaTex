@@ -58,8 +58,10 @@ jobs:
           <footer class="site-footer">
             <a href="https://github.com/fabsch225/LavaTex">fabsch225/LavaTex</a>
           </footer>
-          <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-          <script>mermaid.initialize({ startOnLoad: true, theme: "neutral" });</script>
+          <script type="module">
+            import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs";
+            mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+          </script>
           </body>
           </html>
           TEMPLATE_EOF
@@ -224,14 +226,31 @@ jobs:
           }
           STYLE_EOF
 
+          cat > build/mermaid.lua <<'LUA_EOF'
+          -- Pandoc wraps every fenced code block in <pre><code>, including
+          -- ones tagged ```mermaid. Mermaid.js reads a `.mermaid` element's
+          -- innerHTML directly (not textContent) when parsing it from the
+          -- DOM, so that nested <code> tag becomes part of the "diagram
+          -- source" it tries to parse -- guaranteed a syntax error
+          -- regardless of the diagram's actual content. This turns a
+          -- ```mermaid block into a bare <pre class="mermaid">, the DOM
+          -- shape mermaid actually expects.
+          function CodeBlock(el)
+            if el.classes[1] == "mermaid" then
+              local escaped = el.text:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+              return pandoc.RawBlock("html", "<pre class=\"mermaid\">" .. escaped .. "</pre>")
+            end
+          end
+          LUA_EOF
+
       - name: Build pages
         run: |
           mkdir -p public
           cp build/style.css public/style.css
           touch public/.nojekyll
-          pandoc site/home.md --standalone --template=build/template.html --metadata title="Home" -o public/index.html
-          pandoc site/architecture.md --standalone --template=build/template.html --metadata title="Architecture" -o public/architecture.html
-          pandoc site/spec.md --standalone --template=build/template.html --metadata title="Spec" -o public/spec.html
+          pandoc site/home.md --standalone --template=build/template.html --lua-filter=build/mermaid.lua --metadata title="Home" -o public/index.html
+          pandoc site/architecture.md --standalone --template=build/template.html --lua-filter=build/mermaid.lua --metadata title="Architecture" -o public/architecture.html
+          pandoc site/spec.md --standalone --template=build/template.html --lua-filter=build/mermaid.lua --metadata title="Spec" -o public/spec.html
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,6 +1,10 @@
 .DS_Store
 .claude.json
 
+# Other Claude Code sessions' isolated worktrees for concurrent work on
+# this repo -- each is its own nested git repo, never content to commit.
+.claude/worktrees/
+
 # Local-only: a fork kept for reference, not part of the shipped system
 # (see README's "callout-manager/" section). Has its own git history.
 callout-manager/
