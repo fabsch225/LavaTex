@@ -8,3 +8,17 @@
 # Local-only: a fork kept for reference, not part of the shipped system
 # (see README's "callout-manager/" section). Has its own git history.
 callout-manager/
+
+# test-vault/ is a live Obsidian vault used for interactive plugin testing.
+# Its notes are tracked; Obsidian's own local state (workspace layout, the
+# plugin build copied in from latex-exporter/) and pandoc/latexmk's
+# generated compile output are not -- both regenerate on demand and would
+# just be noise/staleness in the repo.
+test-vault/.obsidian/
+test-vault/**/*.aux
+test-vault/**/*.fdb_latexmk
+test-vault/**/*.fls
+test-vault/**/*.log
+test-vault/**/*.out
+test-vault/**/*.pdf
+test-vault/**/*.tex
