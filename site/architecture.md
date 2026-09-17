@@ -15,7 +15,7 @@ latex-exporter/src/
   latex/                        pure functions, no Obsidian API
     theoremEnvironments.ts        frontmatter -> {trigger word: env id}
     theoremBlockPreprocessor.ts   bold-statement block -> pandoc fenced div
-    rawEnvironments.ts            bare \begin{align} -> {=latex} raw block
+    rawEnvironments.ts            $$\begin{align}...\end{align}$$ -> {=latex} raw block
     referenceShortcuts.ts         [#label] -> raw \ref{label} span
     inlineMacros.ts                \newcommand in body {=latex} blocks -> text
     labelCollector.ts             note text -> every {#label} + context
@@ -39,8 +39,8 @@ up.
 
 ```mermaid
 flowchart LR
-    Note["note.md\n(bold statements, macros:,\nbare \\begin{align}, [#label])"]
-    Note --> Align["wrapBareAlignEnvironments"]
+    Note["note.md\n(bold statements, macros:,\n$$\\begin{align}...\\end{align}$$, [#label])"]
+    Note --> Align["convertAlignBlocksToRaw"]
     Align --> Blocks["preprocessTheoremBlocks\n(frontmatter theorems: -> env ids)"]
     Blocks --> Refs["expandReferenceShortcuts"]
     Refs --> Tmp[("temp .md")]

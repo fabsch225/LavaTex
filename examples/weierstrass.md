@@ -156,10 +156,12 @@ $$
 $$
 und analog
 
+$$
 \begin{align}
      \annulicount &\ge \tilde c_2 \left(  (\varepsilon (n +1) - \delta )^2 - (\varepsilon n +  \delta )^2  \right) \\
 &= \tilde c_2 (2n \varepsilon (\varepsilon  - \delta ) + \varepsilon^2 - 2\varepsilon \delta) \ge c_2 n
 \end{align}
+$$
 
 und man erhält Divergenz für $\alpha \le 2$ ebenfalls mit dem Integralkriterium.
 Es wurde gezeigt, dass eine Umordnung der Reihe
@@ -172,9 +174,11 @@ $$
 
 *Beweis von Theorem [#thm-weier].* Sei $K \subseteq \mathbb C \setminus \Omega$ kompakt; wähle $R > 0$ so dass $K \subset B_R(0)\subset \mathbb C$. Da $|\omega | < R+1$ für nur endlich viele $\omega \in \Omega$ zutrifft, kann man ohne Einschränkung annehmen dass $|\omega | \ge R+1$. Dann ist
 
+$$
 \begin{align}
     \left | \frac{1}{(z-\omega )^2} - \frac{1}{\omega ^2}   \right | = \left | \frac{2z\omega - z^2 }{\omega ^2 (z-\omega )^2}   \right | = \left | \frac{2 - \frac{z}{\omega } }{(1-\frac{z}{\omega } )^2}   \right | \cdot \frac{|z|}{|\omega |^3} \le \frac{3}{(1 - \frac{R}{R+1} )^2} \cdot \frac{R}{|\omega |^3}
 \end{align}
+$$
 
 Nun folgt die Konvergenz der $\varphi$-Funktion aus der Konvergenz der Eisensteinreihe $G_3$.`\qed`{=latex}
 

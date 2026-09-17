@@ -1,22 +1,24 @@
 /**
- * Wraps bare `\begin{align}...\end{align}` (and `align*`) blocks in a
- * ` ```{=latex} ``` ` raw block before handing the note to pandoc.
+ * Turns a `$$ \begin{align}...\end{align} $$` block into a
+ * ` ```{=latex} ``` ` raw block (dropping the `$$`) before handing the note
+ * to pandoc.
  *
- * Written bare (no `$$`/raw-block fence) in the note itself, MathJax's TeX
- * input processor recognizes and renders `align` directly — it auto-detects
- * AMS environments (`processEnvironments`, on by default), no `$` delimiters
- * needed. That's what makes it render live in Obsidian.
+ * MathJax does *not* auto-detect AMS environments outside math delimiters —
+ * `\begin{align}` written bare in the note is just plain text to Obsidian's
+ * live renderer. Like any other display equation it needs `$$` around it to
+ * render live, even though `align` is already its own display environment.
  *
- * Pandoc's markdown reader has no such auto-detection: outside math or a
- * raw block, a bare `\begin{align}` is just paragraph text, and pandoc's
- * LaTeX writer escapes backslashes in paragraph text — the exported `.tex`
- * would come out corrupted. So this wraps the same bare block in a raw
- * LaTeX fence right before pandoc sees it, without touching the note file
- * itself: two different consumers of one source line, each getting the
- * form they need.
+ * Pandoc's markdown reader would instead treat that `$$...$$` as ordinary
+ * display math and hand its contents to the LaTeX math writer, which cannot
+ * emit `\begin{align}` (align isn't valid nested inside another math
+ * environment) — the exported `.tex` would come out broken. So this strips
+ * the `$$` and wraps the bare environment in a raw LaTeX fence right before
+ * pandoc sees it, without touching the note file itself: two different
+ * consumers of one source block, each getting the form they need.
  */
-const ALIGN_BLOCK = /^(\\begin\{align\*?\}[\s\S]*?\\end\{align\*?\})$/gm;
+const ALIGN_BLOCK =
+	/^\$\$[ \t]*\r?\n(\\begin\{align\*?\}[\s\S]*?\\end\{align\*?\})\r?\n\$\$[ \t]*$/gm;
 
-export function wrapBareAlignEnvironments(text: string): string {
-	return text.replace(ALIGN_BLOCK, (block) => "```{=latex}\n" + block + "\n```");
+export function convertAlignBlocksToRaw(text: string): string {
+	return text.replace(ALIGN_BLOCK, (_match, env: string) => "```{=latex}\n" + env + "\n```");
 }

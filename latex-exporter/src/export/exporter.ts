@@ -14,7 +14,7 @@ import * as path from "path";
 
 import { collectEnvironmentTriggers } from "../latex/theoremEnvironments";
 import { preprocessTheoremBlocks } from "../latex/theoremBlockPreprocessor";
-import { wrapBareAlignEnvironments } from "../latex/rawEnvironments";
+import { convertAlignBlocksToRaw } from "../latex/rawEnvironments";
 import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
 import { compileToPdf, openInDefaultApp } from "./latex";
 import { runPandoc } from "./pandoc";
@@ -26,7 +26,7 @@ export async function exportNoteToLatex(app: App, file: TFile, pluginId: string)
 	const triggers = collectEnvironmentTriggers(frontmatter);
 
 	const preprocessed = expandReferenceShortcuts(
-		preprocessTheoremBlocks(wrapBareAlignEnvironments(raw), triggers),
+		preprocessTheoremBlocks(convertAlignBlocksToRaw(raw), triggers),
 	);
 
 	const base = vaultBasePath(app);

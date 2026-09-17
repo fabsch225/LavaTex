@@ -113,12 +113,13 @@ Two independent mechanisms, because they resolve at different times:
 - `$...$` and `$$...$$` are passed to pandoc, and from there into the `.tex`,
   completely unmodified — never reinterpreted. Any macro from `macros:`
   just works in the exported document.
-- `\begin{align}...\end{align}` (and `align*`) can be written **bare**, with
-  no fence at all. MathJax's TeX input processor auto-detects AMS
-  environments on its own and renders them live in Obsidian; the exporter
-  wraps the same bare block in a raw LaTeX block for pandoc automatically
-  (pandoc has no such auto-detection, and would otherwise escape it as plain
-  paragraph text).
+- `\begin{align}...\end{align}` (and `align*`) needs `$$` around it, same as
+  any other display equation — MathJax does not auto-detect AMS environments
+  outside math delimiters, so a bare `\begin{align}` is just plain text to
+  Obsidian's live renderer. The exporter strips that `$$` and wraps the
+  environment in a raw LaTeX block for pandoc instead (pandoc's LaTeX writer
+  can't emit `align` nested inside `$$...$$` math, so passing it through
+  unchanged would come out broken).
 - Anything else pandoc's markdown can't express directly — a mid-document
   `\newcommand` local to one proof, an environment MathJax doesn't support —
   goes in an explicit raw block:

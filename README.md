@@ -49,7 +49,7 @@ src/
   latex/
     theoremEnvironments.ts      frontmatter -> {trigger word: env id}    (pure)
     theoremBlockPreprocessor.ts bold-statement block -> pandoc fenced div (pure)
-    rawEnvironments.ts          bare \begin{align} -> {=latex} raw block  (pure)
+    rawEnvironments.ts          $$\begin{align}...\end{align}$$ -> {=latex} raw block (pure)
     referenceShortcuts.ts       [#label] -> raw \ref{label} span         (pure)
     inlineMacros.ts             \newcommand in body {=latex} blocks -> text (pure)
     labelCollector.ts           note text -> every {#label} + context    (pure)
@@ -143,14 +143,13 @@ opens the statement, an end-of-proof-style mark (`∎`) closes it.
   own syntax: `` $$...$$ {#eq:foo} `` to label, `` [@eq:foo] `` to reference
   (renders as `\eqref{}` instead of plain `\ref{}`) — prefer this over
   `[#eq:foo]` when you specifically want the parenthesized `\eqref` style.
-- `\begin{align}...\end{align}` can be written bare, with no fence: MathJax's
-  TeX input processor auto-detects AMS environments like `align` on its own
-  (`processEnvironments`, on by default) and renders them without needing
-  `$$` around them, so it just works live in Obsidian. `rawEnvironments.ts`
-  wraps that same bare block in a raw block for pandoc automatically (pandoc
-  has no such auto-detection — outside math or a raw block a bare
-  `\begin{align}` is just paragraph text, and would come out corrupted,
-  since pandoc's LaTeX writer escapes backslashes in ordinary prose).
+- `\begin{align}...\end{align}` needs `$$` around it, same as any other
+  display equation — MathJax does *not* auto-detect AMS environments outside
+  math delimiters, so a bare `\begin{align}` is just plain text to Obsidian's
+  live renderer. `rawEnvironments.ts` strips that `$$` and wraps the
+  environment in a raw block for pandoc instead (pandoc's LaTeX writer can't
+  emit `align` nested inside `$$...$$` math, so passing it through unchanged
+  would come out broken).
 - Anything else pandoc's markdown can't express directly (a mid-document
   `\newcommand`, an environment MathJax doesn't understand) goes in an
   explicit raw block: `` ```{=latex} ... ``` ``.
@@ -211,7 +210,7 @@ changes. Caveats:
 The bold-statement preprocessing needs frontmatter's parsed `theorems:` list
 (normally supplied by Obsidian's metadata cache), so it isn't a single
 pandoc command — see `latex-exporter/src/export/exporter.ts` for the exact
-sequence: read note -> `wrapBareAlignEnvironments` -> `preprocessTheoremBlocks`
+sequence: read note -> `convertAlignBlocksToRaw` -> `preprocessTheoremBlocks`
 -> `expandReferenceShortcuts` -> write temp `.md` ->
 pandoc. To debug the pandoc step alone against an already-preprocessed file:
 
