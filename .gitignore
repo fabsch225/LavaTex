@@ -9,26 +9,33 @@
 # (see README's "callout-manager/" section). Has its own git history.
 callout-manager/
 
-# test-vault/ is a live Obsidian vault used for interactive plugin testing.
-# Its notes are tracked; Obsidian's own local state (workspace layout, the
-# plugin build copied in from latex-exporter/) and pandoc/latexmk's
-# generated compile output are not -- both regenerate on demand and would
-# just be noise/staleness in the repo.
-test-vault/.obsidian/
-test-vault/**/*.aux
-test-vault/**/*.fdb_latexmk
-test-vault/**/*.fls
-test-vault/**/*.log
-test-vault/**/*.out
-test-vault/**/*.pdf
-test-vault/**/*.tex
-test-vault/**/*.toc
-test-vault/**/*.exported.md
+# examples/ is a live Obsidian vault -- both the interactive plugin-testing
+# vault and the worked examples referenced from README/site/spec.md. Its
+# notes are tracked; Obsidian's own local workspace state and this plugin's
+# own build (copied in from latex-exporter/, already tracked as source) are
+# not -- both regenerate on demand and would just be noise/staleness in the
+# repo. obsidian-tikzjax is the one exception: it's a third-party plugin
+# with no other install path checked into this repo, so it's vendored and
+# tracked so the vault has working TikZ preview out of the box.
+examples/.obsidian/*
+!examples/.obsidian/plugins/
+examples/.obsidian/plugins/*
+!examples/.obsidian/plugins/obsidian-tikzjax/
+!examples/.obsidian/community-plugins.json
+examples/**/*.aux
+examples/**/*.fdb_latexmk
+examples/**/*.fls
+examples/**/*.log
+examples/**/*.out
+examples/**/*.pdf
+examples/**/*.tex
+examples/**/*.toc
+examples/**/*.exported.md
 
 # Local reference checkouts, not part of the shipped system: the actual
-# Bachelor's thesis LaTeX source (transcribed into test-vault/GBM-Thesis/)
-# and a fork of the community obsidian-tikzjax plugin (built and installed
-# into test-vault/.obsidian/plugins/ for local testing, itself gitignored
-# above). Both are their own git repos with their own history.
+# Bachelor's thesis LaTeX source (transcribed into examples/GBM-Thesis/) and
+# the obsidian-tikzjax fork's own source (built and vendored into
+# examples/.obsidian/plugins/obsidian-tikzjax/ above). Both are their own
+# git repos with their own history.
 repos/gbm/
 repos/obsidian-tikzjax/

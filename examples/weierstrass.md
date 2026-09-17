@@ -1,5 +1,5 @@
 ---
-title: "Die Weierstraßsche $\\varphi$-Funktion"
+title: Die Weierstraßsche $\varphi$-Funktion
 author: Fabian Schuller
 date: \today
 fontsize: 12pt
@@ -130,7 +130,6 @@ $$
 \sum_{n>\delta }^\infty  \sumoverannuli   |\omega|^{-\alpha} \ge \sum_{n=0}^\infty {n+1}^{-\alpha }  \annulicount
 $$
 und analog
-
 $$
 \begin{align}
      \annulicount &\ge \tilde c_2 \left(  (\varepsilon (n +1) - \delta )^2 - (\varepsilon n +  \delta )^2  \right) \\
@@ -271,4 +270,8 @@ $$
 $$
 und somit erhält man $g=1$ bei $z \to 0$. Dies zeigt $(\varphi ^\prime)^2 = f$ wie behauptet.
 ∎
+∎
+
+**Theorem** (Test-Theorem) Es gilt XYZ.
+`\ohnebew`{=latex}
 ∎

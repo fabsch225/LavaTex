@@ -35,6 +35,7 @@ import { convertAlignBlocksToRaw } from "../latex/rawEnvironments";
 import { convertCodeBlocksToRaw } from "../latex/codeBlocks";
 import { convertTikzBlocksToRaw } from "../latex/tikzBlocks";
 import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
+import { stripWikilinks } from "../latex/wikilinks";
 import { expandCitationsAcrossFiles } from "./citations";
 import { readNote, resolveFrontmatterReferences, resolveLinkpath } from "./frontmatterRefs";
 import { compileToPdf, openInDefaultApp } from "./latex";
@@ -53,7 +54,10 @@ function linkpathOf(value: unknown): string | undefined {
 /** Runs the same note-syntax -> pandoc-syntax passes a standalone note gets, minus theorem/citation handling (done project-wide, once). */
 function preprocessChapterBody(body: string, triggers: ReadonlyMap<string, string>): string {
 	return expandReferenceShortcuts(
-		preprocessTheoremBlocks(convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(body))), triggers),
+		preprocessTheoremBlocks(
+			convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(stripWikilinks(body)))),
+			triggers,
+		),
 	);
 }
 

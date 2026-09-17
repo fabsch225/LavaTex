@@ -18,6 +18,9 @@ import { convertAlignBlocksToRaw } from "../latex/rawEnvironments";
 import { convertCodeBlocksToRaw } from "../latex/codeBlocks";
 import { convertTikzBlocksToRaw } from "../latex/tikzBlocks";
 import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
+import { stripWikilinks } from "../latex/wikilinks";
+import { expandMacros, parseMacros } from "../latex/macroExpansion";
+import { type TheoremSpec, resolveNumbering } from "../latex/markdownNumbering";
 import { collapseBlankLines, stripEnvironmentEndMarks, unwrapRawLatexSpans } from "../latex/markdownNormalizer";
 import { expandCitations } from "./citations";
 import { resolveFrontmatterReferences } from "./frontmatterRefs";
@@ -37,8 +40,19 @@ async function preprocessNote(app: App, file: TFile): Promise<string> {
 		: undefined;
 	const triggers = collectEnvironmentTriggers(frontmatter);
 
+	// Only the body, never the frontmatter block: a `"[[Note]]"` frontmatter
+	// value (an unresolved preamble/macros/theorems/bibliography-raw
+	// reference, or just a field this plugin doesn't know about) is a
+	// completely different thing from a wikilink written in prose, and
+	// stripping it there would silently break the former.
+	const frontmatterBlock = frontmatterInfo.exists ? raw.slice(0, frontmatterInfo.contentStart) : "";
+	const body = stripWikilinks(frontmatterInfo.exists ? raw.slice(frontmatterInfo.contentStart) : raw);
+
 	return expandReferenceShortcuts(
-		preprocessTheoremBlocks(convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(raw))), triggers),
+		preprocessTheoremBlocks(
+			convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(frontmatterBlock + body))),
+			triggers,
+		),
 	);
 }
 
@@ -118,10 +132,17 @@ const ESSENTIAL_FRONTMATTER_FIELDS = ["title", "author", "date"] as const;
  *   `markdownCitations.ts`).
  * - The `∎` block terminator and `` `...`{=latex} `` wrapper syntax are
  *   stripped — meaningless outside this plugin's own pipeline.
- * - The `macros:` field (if any) is inserted as a math block near the top,
- *   so the custom commands it defines are visible instead of silently
- *   dropped (frontmatter is otherwise invisible to anything reading plain
- *   markdown).
+ * - Plain `[[wikilinks]]` (not `&[[citations]]`) become their display text —
+ *   a knowledge-graph link between notes has no meaning to a standalone
+ *   file.
+ * - Every `macros:` invocation (`\pa`, `\vol`, ...) is expanded inline to
+ *   its definition, so the math is self-contained — a plain reader has no
+ *   way to know what a custom command means otherwise.
+ * - Theorem-like headers and labelled equations are stamped with their
+ *   resolved number (the same counting `\newtheorem{...}[counter]`/
+ *   `\numberwithin{equation}{...}` would do), and every `[#label]`/
+ *   `[@eq:label]` reference is replaced with that number — there's no LaTeX
+ *   compiler downstream to resolve a `\ref{}` here.
  * - Frontmatter is trimmed to `title`/`author`/`date` — the rest
  *   (`preamble`, `theorems`, LaTeX layout knobs, ...) has no meaning here.
  *
@@ -137,20 +158,22 @@ export async function exportNoteToMarkdown(app: App, file: TFile): Promise<strin
 	const info = getFrontMatterInfo(body);
 	const frontmatter = info.exists ? ((parseYaml(info.frontmatter) as Record<string, unknown>) ?? {}) : {};
 	const macros = typeof frontmatter["macros"] === "string" ? (frontmatter["macros"] as string).trim() : "";
+	const theorems = Array.isArray(frontmatter["theorems"]) ? (frontmatter["theorems"] as TheoremSpec[]) : [];
+	const numberwithin = typeof frontmatter["numberwithin"] === "string" ? frontmatter["numberwithin"] : "section";
 	const essentialFrontmatter: Record<string, unknown> = {};
 	for (const key of ESSENTIAL_FRONTMATTER_FIELDS) {
 		if (key in frontmatter) {
 			essentialFrontmatter[key] = frontmatter[key];
 		}
 	}
-	const restBody = (info.exists ? body.slice(info.contentStart) : body).trim();
+
+	let restBody = stripWikilinks((info.exists ? body.slice(info.contentStart) : body).trim());
+	restBody = expandMacros(restBody, parseMacros(macros));
+	restBody = resolveNumbering(restBody, theorems, numberwithin);
 
 	const parts: string[] = [];
 	if (Object.keys(essentialFrontmatter).length > 0) {
 		parts.push("---\n" + stringifyYaml(essentialFrontmatter) + "---");
-	}
-	if (macros) {
-		parts.push("$$\n" + macros + "\n$$");
 	}
 	parts.push(restBody);
 	if (bibliography.length > 0) {

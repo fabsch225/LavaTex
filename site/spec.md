@@ -11,7 +11,7 @@ Equations are always numbered per section
 the package list included — comes from the note's `preamble` frontmatter
 field, not a hardcoded list in `template.latex`.
 
-`examples/preamble.md` is a suggested opinionated default (`mathtools`,
+`examples/Util/preamble.md` is a suggested opinionated default (`mathtools`,
 `amssymb`, `amsthm`, `mathrsfs`, `bbm`, `bm`, `hyperref` with colored blue
 links, `setspace`, `enumitem`), referenced from `examples/weierstrass.md`'s
 frontmatter — reuse it, or write your own if a project needs a different
@@ -79,6 +79,17 @@ a wikilink to the source note — expanded to a raw `` `\cite{kk}`{=latex} ``
 span. Every distinct source cited this way has its `bibitem` collected and
 assembled into `bibliography-raw` automatically, in citation order, so the
 exported bibliography always matches exactly what got cited.
+
+### Plain wikilinks
+
+An ordinary `[[Some Note]]` or `[[Some Note|display text]]` — the personal
+knowledge-graph links Obsidian is for, unrelated to citing a source — is
+left completely alone in the editor, but every export target (LaTeX, PDF,
+plain Markdown) replaces it with just its display text before handing the
+note to pandoc. A note written for both linking your own vault together and
+being exported doesn't have to choose: keep linking notes to each other
+exactly as you would anywhere else, and the exported document just sees
+prose, never a broken link or literal double brackets.
 
 ## Theorem-like blocks
 

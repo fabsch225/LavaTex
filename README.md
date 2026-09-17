@@ -23,6 +23,25 @@ into this repo.
    with `latexmk` on `PATH` (e.g. `brew install --cask mactex-no-gui`, or
    any TeX Live/MiKTeX install).
 
+## Worked examples
+
+`examples/` is itself an Obsidian vault — open it directly to see (and
+export) real notes, not just prose describing the spec:
+
+- `examples/weierstrass.md` — a single note (definitions, lemmas, a proof,
+  citations), the shared `preamble`/`macros`/`theorems` files it references
+  living in `examples/Util/`.
+- `examples/snake-lemma.md` — another single note, this time with its own
+  inline frontmatter, a `tikz` commutative diagram, and a full proof by
+  diagram chase (theorem/equation cross-references, citations, the works).
+- `examples/GBM-Thesis/` — a real, 9-chapter Bachelor's thesis, demonstrating
+  **Export project to LaTeX/PDF**: a master note (`thesis-project.md`)
+  assembling chapter notes into one document with shared numbering and a
+  table of contents.
+- `examples/.obsidian/plugins/obsidian-tikzjax/` — vendored and enabled, so
+  ` ```tikz ``` ` blocks (both the ones above and any you add) render live
+  in the editor, not just after export.
+
 ## Usage
 
 Twelve commands, all in the command palette:
@@ -45,19 +64,26 @@ Twelve commands, all in the command palette:
   - `&[[Source]]` citations become a readable `[marker]` (the source's
     `\bibitem[marker]{...}` short label, or a running number) plus a
     generated `## Bibliography` section — not a raw `\cite{}` span.
+  - Plain `[[wikilinks]]` (not citations) become just their display text —
+    a knowledge-graph link between notes has no meaning to a standalone
+    file.
   - The `∎` block terminator and `` `...`{=latex} `` raw-LaTeX wrapper
     syntax are stripped (the LaTeX itself is kept where there's no plain
     equivalent, e.g. a local `\newcommand` — just not the pandoc fence
     noise around it).
-  - The `macros:` field (if any) is inserted as a math block near the top,
-    so its custom commands are visible instead of silently dropped —
-    frontmatter is otherwise invisible to anything reading plain markdown.
+  - Every `macros:` invocation is expanded inline to its definition instead
+    of being dumped as a math block — the exported math is self-contained,
+    with no custom command a plain reader wouldn't understand.
+  - Theorem-like headers and labelled equations are stamped with their
+    resolved number — the same counting `\newtheorem{...}[counter]`/
+    `\numberwithin{equation}{...}` would do at LaTeX-compile time, done by
+    hand here instead — and every `[#label]`/`[@eq:label]` reference to one
+    is replaced with that number (bare for `[#label]`, parenthesized for
+    `[@eq:label]`), instead of being left as an unresolved `\ref{}`. A
+    `[#label]` to anything else (a figure) has no equivalent counting pass
+    yet and is left as-is — an honest limitation, not a bug.
   - Frontmatter is trimmed to `title`/`author`/`date`; `preamble`,
     `theorems`, and LaTeX layout knobs have no meaning here.
-
-  `[#label]`/`\ref{}` theorem cross-references have no plain-markdown
-  equivalent (amsthm numbering only exists after a LaTeX compile) and are
-  left as-is — an honest limitation, not a bug.
 - **Insert reference to label** — fuzzy-searches every `{#label}` in the
   current note (theorem headers and labelled equations alike) and inserts
   a `[#label]` shortcut at the cursor.
@@ -88,10 +114,14 @@ src/
     theoremBlockPreprocessor.ts bold-statement block -> pandoc fenced div (pure)
     rawEnvironments.ts          $$\begin{align}...\end{align}$$ -> {=latex} raw block (pure)
     tikzBlocks.ts               ```tikz``` block (+ optional Figure: caption) -> {=latex} raw block (pure)
+    codeBlocks.ts               ```r``` block -> raw lstlisting environment  (pure)
     referenceShortcuts.ts       [#label] -> raw \ref{label} span         (pure)
     inlineMacros.ts             \newcommand in body {=latex} blocks -> text (pure)
     labelCollector.ts           note text -> every {#label} + context    (pure)
     markdownNormalizer.ts       strip ∎/{=latex} noise for the plain-markdown export (pure)
+    wikilinks.ts                [[wikilink]] -> its display text, every export target (pure)
+    macroExpansion.ts           \newcommand definitions -> inline expansion, plain-markdown export (pure)
+    markdownNumbering.ts        theorem/equation counting + [#label] -> resolved number, plain-markdown export (pure)
   obsidian-math/
     mathJaxMacros.ts           feed macros: text to Obsidian's live MathJax renderer
   export/
@@ -100,6 +130,7 @@ src/
     frontmatterRefs.ts         resolve [[wikilink]] frontmatter fields to referenced notes
     citations.ts               &[[Source]] -> raw \cite{key} span + assembled bibliography-raw
     markdownCitations.ts       &[[Source]] -> readable [marker] + bibliography (markdown export)
+    rawLatexFrontmatter.ts     preamble:/macros:/bibliography-raw: -> --include-in-header/-after-body files, not template vars
     pandoc.ts                  spawn pandoc with the fixed flag set (LaTeX export only)
     latex.ts                   spawn latexmk to compile PDF, open it
     exporter.ts                orchestrates the preprocessing passes + pandoc/latexmk/markdown
@@ -132,7 +163,7 @@ like ordinary body text would.
 
 Equations are numbered per section; everything else about the preamble is
 frontmatter-driven — there's no hardcoded package list baked into the
-plugin. `examples/preamble.md` is a suggested opinionated default
+plugin. `examples/Util/preamble.md` is a suggested opinionated default
 (`mathtools`, `amssymb`, `amsthm`, `mathrsfs`, `bbm`, `bm`, `hyperref`
 with blue links, `setspace`, `enumitem`), not a requirement.
 
@@ -144,7 +175,7 @@ Per-document YAML frontmatter:
   (see below).
 - `preamble`: literal LaTeX (`\usepackage...`), inserted into the preamble
   right after `\documentclass`/`geometry`/`inputenc` — this is where the
-  opinionated package list lives now (see `examples/preamble.md`).
+  opinionated package list lives now (see `examples/Util/preamble.md`).
 - `theorems`: list of `{id, name, counter}` (new counter) or `{id, name, like}`
   (shares a counter). `id` becomes the `\newtheorem`/environment name;
   `name` is the word you bold in the note to start one.
@@ -162,8 +193,8 @@ note holding that content instead, so a shared preamble/macros/theorem setup
 doesn't have to be copy-pasted into every note's frontmatter. For
 `preamble`/`macros`/`bibliography-raw` the linked note's body (plain text,
 frontmatter stripped if it has any) is used; for `theorems` it's the linked
-note's own `theorems:` frontmatter field. See `examples/preamble.md`,
-`examples/macros.md`, `examples/theorems.md`, referenced from
+note's own `theorems:` frontmatter field. See `examples/Util/preamble.md`,
+`examples/Util/macros.md`, `examples/Util/theorems.md`, referenced from
 `examples/weierstrass.md`.
 
 ### Citations
@@ -181,7 +212,7 @@ bibitem: |
 ---
 ```
 
-(see `examples/Koecher-Krieg.md`, `examples/Remmert-Schumacher.md`). Citing
+(see `examples/Quellen/Koecher-Krieg.md`, `examples/Quellen/Remmert-Schumacher.md`). Citing
 one from a note's body is `&[[Koecher-Krieg]]` — an `&` right before a
 wikilink to the source note — which `citations.ts` expands to a raw
 `` `\cite{kk}`{=latex} `` span. Every distinct source cited this way has its
