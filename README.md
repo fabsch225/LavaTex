@@ -62,6 +62,7 @@ src/
     paths.ts                   vault/plugin filesystem paths
     pathEnv.ts                 PATH augmentation shared by pandoc.ts/latex.ts
     frontmatterRefs.ts         resolve [[wikilink]] frontmatter fields to referenced notes
+    citations.ts               &[[Source]] -> raw \cite{key} span + assembled bibliography-raw
     pandoc.ts                  spawn pandoc with the fixed flag set
     latex.ts                   spawn latexmk to compile PDF, open it
     exporter.ts                orchestrates the preprocessing passes + pandoc(+pdf)
@@ -76,10 +77,17 @@ to the outside world (the live editor, the pandoc subprocess, and modal UI,
 respectively), and none of them know about each other.
 
 The `pandoc/theorems.lua` Lua filter (fenced-div -> `\begin{env}`) does all
-the LaTeX-environment work and hasn't changed; `theoremBlockPreprocessor.ts`
-only normalizes the note's markdown into the fenced-div syntax that filter
-already understands. Two small, single-purpose transforms instead of one
-that does both jobs.
+the LaTeX-environment work; `theoremBlockPreprocessor.ts` only normalizes
+the note's markdown into the fenced-div syntax that filter already
+understands. Two small, single-purpose transforms instead of one that does
+both jobs.
+
+Fenced-div attribute values (like a header's `title="..."`) are plain
+strings pandoc never reparses as markdown, so a raw-inline span inside one
+(a citation's `` `\cite{key}`{=latex} ``, say) would otherwise land in the
+`.tex` completely literally. `theorems.lua` round-trips the title through
+`pandoc.read`/`pandoc.write` before splicing it in, so it renders exactly
+like ordinary body text would.
 
 ## Markdown spec
 
@@ -104,25 +112,49 @@ Per-document YAML frontmatter:
 - `macros`: literal LaTeX (`\newcommand...`), inserted verbatim into the
   preamble *and* registered as live MathJax macros (see below)
 - `bibliography-raw`: literal LaTeX (e.g. a `thebibliography` block), inserted
-  after the body
+  after the body. Normally left unset — see "Citations" below, which fills
+  this in automatically from whatever sources the note actually cites.
 - `autoEqnLabels: true` — number every display equation, not just labelled
   ones
 
 `preamble`, `theorems`, `macros`, and `bibliography-raw` can each be either
 the literal value shown above, or `"[[Some Note]]"` — a wikilink to another
-note holding that content instead, so shared preamble/macros/bibliography/
-theorem setups don't have to be copy-pasted into every note's frontmatter.
-For `preamble`/`macros`/`bibliography-raw` the linked note's body (plain
-text, frontmatter stripped if it has any) is used; for `theorems` it's the
-linked note's own `theorems:` frontmatter field. See `examples/preamble.md`,
-`examples/macros.md`, `examples/bibliography.md`, `examples/theorems.md`,
-referenced from `examples/weierstrass.md`.
+note holding that content instead, so a shared preamble/macros/theorem setup
+doesn't have to be copy-pasted into every note's frontmatter. For
+`preamble`/`macros`/`bibliography-raw` the linked note's body (plain text,
+frontmatter stripped if it has any) is used; for `theorems` it's the linked
+note's own `theorems:` frontmatter field. See `examples/preamble.md`,
+`examples/macros.md`, `examples/theorems.md`, referenced from
+`examples/weierstrass.md`.
+
+### Citations
+
+Each bibliography source is its own note — `key` (the `\cite{}` argument)
+and `bibitem` (the hardcoded `\bibitem[...]{...}` entry, written exactly as
+it should appear in the exported document) in its frontmatter:
+
+```yaml
+---
+key: kk
+bibitem: |
+  \bibitem[KK]{kk}
+  Koecher, Max, und Aloys Krieg. 2007. Elliptische Funktionen und Modulformen. ...
+---
+```
+
+(see `examples/Koecher-Krieg.md`, `examples/Remmert-Schumacher.md`). Citing
+one from a note's body is `&[[Koecher-Krieg]]` — an `&` right before a
+wikilink to the source note — which `citations.ts` expands to a raw
+`` `\cite{kk}`{=latex} `` span. Every distinct source cited this way has its
+`bibitem` collected and assembled into `bibliography-raw` automatically (in
+citation order), so the exported bibliography always matches exactly what
+got cited — no `bibliography-raw` field to maintain by hand.
 
 Body — theorem-like environments are bold statements, not fenced divs or
 callouts (both were painful to edit — every line needed a `>` prefix):
 
 ```
-**Lemma** (\kk S.21f) {#lem-gitter-invariant}
+**Lemma** (&[[Koecher-Krieg]] S.21f) {#lem-gitter-invariant}
 Man nennt
 $$
 \delta := \delta(\omega_1, \omega_2)
@@ -229,10 +261,12 @@ The bold-statement preprocessing needs frontmatter's parsed `theorems:` list,
 so it isn't a single pandoc command — see `latex-exporter/src/export/exporter.ts`
 for the exact sequence: read note -> `resolveFrontmatterReferences`
 (inline any `[[wikilink]]`-referenced preamble/macros/bibliography/theorems)
--> `convertAlignBlocksToRaw` -> `preprocessTheoremBlocks` ->
-`expandReferenceShortcuts` -> write temp `.md` -> pandoc. To debug the
-pandoc step alone against an already-preprocessed file (frontmatter
-references already inlined by hand, if the note used any):
+-> `expandCitations` (`&[[Source]]` -> `\cite{key}`, assemble
+`bibliography-raw` from what got cited) -> `convertAlignBlocksToRaw` ->
+`preprocessTheoremBlocks` -> `expandReferenceShortcuts` -> write temp `.md`
+-> pandoc. To debug the pandoc step alone against an already-preprocessed
+file (frontmatter references and citations already inlined by hand, if the
+note used any):
 
 ```sh
 pandoc preprocessed.md \

@@ -15,7 +15,7 @@ and live math-macro rendering in Obsidian's own editor.
 ## Quick example
 
 ```
-**Lemma** (\kk S.21f) {#lem-gitter-invariant}
+**Lemma** (&[[Koecher-Krieg]] S.21f) {#lem-gitter-invariant}
 Man nennt
 $$
 \delta := \delta(\omega_1, \omega_2)
@@ -26,9 +26,9 @@ Betrachte ...
 ∎
 ```
 
-exports to a real `\begin{lemma}[\kk S.21f]\label{lem-gitter-invariant}...`
-environment, numbered and cross-referenceable, with a matching
-`\begin{proof}...\end{proof}`.
+exports to a real
+`\begin{lemma}[\cite{kk} S.21f]\label{lem-gitter-invariant}...` environment,
+numbered and cross-referenceable, with a matching `\begin{proof}...\end{proof}`.
 
 See the [repo README](https://github.com/fabsch225/LavaTex#readme) for
 install steps and a full worked example (a real paper, converted and

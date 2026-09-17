@@ -1,5 +1,4 @@
 \newcommand{\ohalbe}{\frac{\omega}{2}}
-\newcommand{\kk}{\cite{kk} }
 \newcommand{\vol}{\operatorname{vol}}
 \newcommand*{\pa}{%
     \rlap{\rotatebox{-30}{\rule[.05ex]{.4pt}{.77em}}}%

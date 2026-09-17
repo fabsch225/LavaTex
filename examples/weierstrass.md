@@ -11,12 +11,11 @@ autoEqnLabels: true
 preamble: "[[preamble]]"
 theorems: "[[theorems]]"
 macros: "[[macros]]"
-bibliography-raw: "[[bibliography]]"
 ---
 
 # Existenz der Weierstraßschen $\varphi$-Funktion
 
-**Definition** (Gitter; \kk S. 14)
+**Definition** (Gitter; &[[Koecher-Krieg]] S. 14)
 Eine Teilmenge $\Omega \subset \mathbb C$ heißt Gitter, wenn es reell-linear-unabhängige $\omega _1, \omega _2 \in \mathbb C$ gibt, so dass
 $$
 \Omega = \omega _1 \mathbb Z + \omega _2 \mathbb Z.
@@ -29,7 +28,7 @@ Im Folgenden sei stets $\Omega$ ein Gitter mit Basis $(\omega _1, \omega _2)$. Z
 Solche Funktionen nennt man elliptisch bezüglich $\Omega$.
 ∎
 
-**Theorem** (Weierstraßsche $\varphi$-Funktion; \kk S.35) {#thm-weier}
+**Theorem** (Weierstraßsche $\varphi$-Funktion; &[[Koecher-Krieg]] S.35) {#thm-weier}
 Die Reihe
 $$
 \varphi(z) := z^{-2} + \sum_{\omega \in \Omega} \left(  \frac{1}{(z-\omega )^2} - \frac{1}{\omega ^2} \right)
@@ -39,12 +38,12 @@ konvergiert auf $\mathbb C \setminus \Omega$ lokal absolut gleichmäßig. Man ne
 
 Für den Beweis wird die Konvergenz von Eisensteinreihen verwendet. Da es sich um eine Summation aller Gitterpunkte handelt, erhält man mit einem Analogon zum Riemannschen Umordnungssatz die gewünschte doppelte Periodizität.
 
-**Theorem** (Umordnungssatz; \cite{rr} S.26) {#thm-umord}
+**Theorem** (Umordnungssatz; &[[Remmert-Schumacher]] S.26) {#thm-umord}
 Sei $(a_n)_{n \in \mathbb N} \subset \mathbb C$ eine Folge. Ist $\sum_{n=1}^\infty a_n$ absolut konvergent, so konvergiert auch jede Umordnung dieser Reihe, d. h. für jede Bijektion $k : \mathbb N \to \mathbb N$ konvergiert auch $\sum_{n=1}^\infty a_{k(n)}$ absolut.
 `\ohnebew`{=latex}
 ∎
 
-**Definition** (Periodenparralelogramm, Grundmasche; \kk S. 19f)
+**Definition** (Periodenparralelogramm, Grundmasche; &[[Koecher-Krieg]] S. 19f)
 Man definiert das Periodenparralelogramm (bezüglich $(\omega _1, \omega _2)$) mit Basispunkt $u \in \mathbb C$ durch
 $$
 \pa(u, \omega _1, \omega _2) := \left\lbrace u + \alpha \omega _1 + \beta \omega _2 : \alpha, \beta  \in [0, 1) \right\rbrace
@@ -52,12 +51,12 @@ $$
 und nennt $\pa(0, \omega_1, \omega _2) =: \pa(\omega_1, \omega _2)$ Grundmasche von $\Omega$.
 ∎
 
-**Definition** (Gittervolumen; \kk S. 20)
+**Definition** (Gittervolumen; &[[Koecher-Krieg]] S. 20)
 Man definiert $\vol \Omega := \vol \left ( \pa(u, \omega_1, \omega _2) \right )$ welches unabhängig von der Wahl von $u$ und der Wahl der Basis `\basis`{=latex} ist.
 `\ohnebew`{=latex}
 ∎
 
-**Lemma** (\kk S.21f) {#lem-gitter-invariant}
+**Lemma** (&[[Koecher-Krieg]] S.21f) {#lem-gitter-invariant}
 Man nennt
 $$
 \delta := \delta (\omega _1, \omega _2) := \sup \left\{ |z-w| : z, w \in \pa(\omega _1, \omega _2)  \right\}
@@ -92,7 +91,7 @@ Teilt man die Gleichung durch $\vol(\Omega)$ erhält man die Behauptung.
 ∎
 ∎
 
-**Definition und Lemma** (Eisensteinreihen; \kk S.22ff) {#thm-eisen}
+**Definition und Lemma** (Eisensteinreihen; &[[Koecher-Krieg]] S.22ff) {#thm-eisen}
 Die Reihe
 $$
 \sum_{0 \ne \omega  \in \Omega} |\omega|^{-\alpha}
@@ -158,7 +157,7 @@ $$
 
 Nun folgt die Konvergenz der $\varphi$-Funktion aus der Konvergenz der Eisensteinreihe $G_3$.`\qed`{=latex}
 
-**Lemma** (\cite{kk}, S. 23) {#lem-ungerade-eisenstein}
+**Lemma** (&[[Koecher-Krieg]], S. 23) {#lem-ungerade-eisenstein}
 Es gilt $G_k(\Omega)=0$ für alle ungeraden $k \ge 3$.
 
 **Beweis**
@@ -170,7 +169,7 @@ Somit folgt die Behauptung.
 ∎
 ∎
 
-**Theorem** (Laurent-Entwicklung der Weierstraßschen $\varphi$-Funktion; \kk S.37)
+**Theorem** (Laurent-Entwicklung der Weierstraßschen $\varphi$-Funktion; &[[Koecher-Krieg]] S.37)
 Setzt man $\gamma := \gamma (\Omega) := \operatorname{min} \{ |\omega | : 0 \ne \omega \in \Omega \}$ so gilt für alle $z \in \mathbb C$ mit $0 < |z| < \gamma$
 $$
 \varphi (z) = z^{-2} + \sum_{n=2}^{\infty} (2n-1) G_{2n} \cdot z^{2n-2},
@@ -206,7 +205,7 @@ Mit Lemma [#lem-ungerade-eisenstein] verschwinden die Summanden mit  $2 \mid m$,
 
 Wir untersuchen die Weierstraßsche $\varphi$-Funktion mit den Liouvilleschen Sätzen.
 
-**Theorem** (Liouvillesche Sätze; \kk S.25ff)
+**Theorem** (Liouvillesche Sätze; &[[Koecher-Krieg]] S.25ff)
 1. Ist $f \in \mathcal K(\Omega)$ holomorph, so ist $f$ bereits konstant. Hierbei bezeichnet $\mathcal K(\Omega)$ den Körper der meromorphen $\Omega$-periodischen Funktionen.
 2. Ist $f \in \mathcal K(\Omega)$ und $P$ ein Periodenparrallelogramm, so gilt für die Summe der Residuen
    $$
@@ -224,11 +223,11 @@ Wir untersuchen die Weierstraßsche $\varphi$-Funktion mit den Liouvilleschen S�
 `\ohnebew`{=latex}
 ∎
 
-**Korollar** (der Laurent-Darstellung; \kk S.28)
+**Korollar** (der Laurent-Darstellung; &[[Koecher-Krieg]] S.28)
 Die Weierstraßsche $\varphi$-Funktion ist eine gerade Funktion, d. h. $\varphi (-z)=\varphi (z)$, und für den ersten Laurent-Koeffizienten gilt $a_1=0$. Darüber hinaus ist $\varphi ^\prime$ eine ungerade (elliptische) Funktion, die genau an allen Gitterpunkten Pole dritter Ordnung hat.
 ∎
 
-**Lemma** (\kk S.28) {#lem-a}
+**Lemma** (&[[Koecher-Krieg]] S.28) {#lem-a}
 Ist $\omega \in \Omega$ aber $\ohalbe \notin \Omega$, dann ist $\ohalbe$ eine einfache Nullstelle von $\varphi ^\prime$. Umgekehrt gilt  $z \notin \Omega, 2z \in \Omega$ für jedes $z \in \mathbb C$ mit $\varphi ^\prime(z)=0$.
 
 **Beweis**
@@ -240,7 +239,7 @@ Sei nun $z_0$ eine Nullstelle von $\varphi ^\prime$. Wegen der Elliptizität kö
 ∎
 ∎
 
-**Lemma** (\kk S.29) {#lem-b}
+**Lemma** (&[[Koecher-Krieg]] S.29) {#lem-b}
 Sei $P$ ein Periodenparallelogramm. Für $q \in \mathbb C$ gilt
 $$
 \forall \omega \in \Omega \quad \text{mit} \quad  \ohalbe \notin \Omega : q \ne \varphi(\ohalbe)
@@ -257,7 +256,7 @@ Also erhalten wir $u \ne v \in P$ mit $\varphi(u)=\varphi(v)=q$. Nach dem vierte
 ∎
 ∎
 
-**Theorem** (Differenzialgleichung für die Weierstraßsche $\varphi$-Funktion; \kk S.29f)
+**Theorem** (Differenzialgleichung für die Weierstraßsche $\varphi$-Funktion; &[[Koecher-Krieg]] S.29f)
 Für alle $z \in \mathbb C \setminus \Omega$ gilt
 $$
 (\varphi ^\prime)^2(z) = 4 (\varphi(z)-e_1) (\varphi(z)-e_2) (\varphi(z)-e_3)

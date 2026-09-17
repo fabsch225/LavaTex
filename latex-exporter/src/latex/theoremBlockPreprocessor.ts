@@ -8,7 +8,7 @@
  * typeset in a paper: a bold label starts the statement, an end-of-proof
  * style mark ends it:
  *
- *   **Theorem** (Weierstraßsche $\varphi$-Funktion; \kk S.35) {#thm-weier}
+ *   **Theorem** (Weierstraßsche $\varphi$-Funktion; &[[Koecher-Krieg]] S.35) {#thm-weier}
  *   Die Reihe
  *   $$
  *   \varphi(z) := ...
@@ -18,7 +18,7 @@
  *
  * becomes:
  *
- *   ::: {.theorem title="Weierstraßsche $\varphi$-Funktion; \kk S.35" #thm-weier}
+ *   ::: {.theorem title="Weierstraßsche $\varphi$-Funktion; &[[Koecher-Krieg]] S.35" #thm-weier}
  *   Die Reihe
  *   ...
  *   :::

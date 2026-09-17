@@ -25,6 +25,7 @@ latex-exporter/src/
     paths.ts                     vault/plugin filesystem paths
     pathEnv.ts                   PATH augmentation shared by pandoc.ts/latex.ts
     frontmatterRefs.ts           resolve [[wikilink]] frontmatter fields to referenced notes
+    citations.ts                 &[[Source]] -> raw \cite{key} span + assembled bibliography-raw
     pandoc.ts                    spawn pandoc with the fixed flag set
     latex.ts                     spawn latexmk to compile PDF, open it
     exporter.ts                  orchestrates the preprocessing passes + pandoc(+pdf)
@@ -45,7 +46,8 @@ up.
 flowchart LR
     Note["note.md\n(bold statements, macros:,\n$$\\begin{align}...\\end{align}$$, [#label])"]
     Note --> FmRefs["resolveFrontmatterReferences\n([[wikilink]] preamble/macros/\nbibliography/theorems -> inlined)"]
-    FmRefs --> Align["convertAlignBlocksToRaw"]
+    FmRefs --> Cite["expandCitations\n(&[[Source]] -> \\cite{key},\nbibitem: -> assembled bibliography-raw)"]
+    Cite --> Align["convertAlignBlocksToRaw"]
     Align --> Blocks["preprocessTheoremBlocks\n(frontmatter theorems: -> env ids)"]
     Blocks --> Refs["expandReferenceShortcuts"]
     Refs --> Tmp[("temp .md")]
@@ -64,11 +66,17 @@ reference shortcuts), so their order mostly doesn't matter — they're run in
 this sequence in `exporter.ts` for no reason deeper than readability.
 
 `theorems.lua` is the one piece doing real LaTeX-environment work
-(`::: {.lemma title="..." #id}` → `\begin{lemma}[...]\label{id}`), and it
-hasn't changed since before the bold-statement syntax existed:
+(`::: {.lemma title="..." #id}` → `\begin{lemma}[...]\label{id}`);
 `theoremBlockPreprocessor.ts`'s only job is producing the fenced-div syntax
-that filter already understood. Two small single-purpose transforms instead
-of one that does both jobs.
+that filter understands. Two small single-purpose transforms instead of one
+that does both jobs.
+
+Pandoc never reparses a fenced div's attribute values as markdown — they're
+plain strings — so a title containing a raw-inline span (like a citation's
+`` `\cite{key}`{=latex} ``) would otherwise land in the `.tex` literally,
+backticks and all. `theorems.lua` round-trips the title string through
+`pandoc.read`/`pandoc.write` before splicing it into `\begin{env}[title]`,
+so it's rendered exactly like ordinary body text would be.
 
 Numbered, cross-referenceable equations (`$$...$$ {#eq:foo}`, `[@eq:foo]`)
 are handled entirely by `pandoc-crossref` — a well-maintained, purpose-built

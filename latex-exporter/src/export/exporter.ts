@@ -16,13 +16,15 @@ import { collectEnvironmentTriggers } from "../latex/theoremEnvironments";
 import { preprocessTheoremBlocks } from "../latex/theoremBlockPreprocessor";
 import { convertAlignBlocksToRaw } from "../latex/rawEnvironments";
 import { expandReferenceShortcuts } from "../latex/referenceShortcuts";
+import { expandCitations } from "./citations";
 import { resolveFrontmatterReferences } from "./frontmatterRefs";
 import { compileToPdf, openInDefaultApp } from "./latex";
 import { runPandoc } from "./pandoc";
 import { pluginDir, vaultBasePath } from "./paths";
 
 export async function exportNoteToLatex(app: App, file: TFile, pluginId: string): Promise<string> {
-	const raw = await resolveFrontmatterReferences(app, file, await app.vault.read(file));
+	let raw = await resolveFrontmatterReferences(app, file, await app.vault.read(file));
+	raw = await expandCitations(app, file, raw);
 	const frontmatterInfo = getFrontMatterInfo(raw);
 	const frontmatter = frontmatterInfo.exists
 		? (parseYaml(frontmatterInfo.frontmatter) as Record<string, unknown>)

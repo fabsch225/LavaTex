@@ -12,6 +12,11 @@ import { type App, type TFile, getFrontMatterInfo, parseYaml, stringifyYaml } fr
 
 const WIKILINK = /^\[\[([^\]|]+)(?:\|[^\]]*)?\]\]$/;
 
+/** Resolves an Obsidian linkpath (a wikilink's target, without the `[[ ]]`) to a file. */
+export function resolveLinkpath(app: App, sourceFile: TFile, linkpath: string): TFile | undefined {
+	return app.metadataCache.getFirstLinkpathDest(linkpath.trim(), sourceFile.path) ?? undefined;
+}
+
 function resolveWikilinkFile(app: App, sourceFile: TFile, value: unknown): TFile | undefined {
 	if (typeof value !== "string") {
 		return undefined;
@@ -20,10 +25,11 @@ function resolveWikilinkFile(app: App, sourceFile: TFile, value: unknown): TFile
 	if (!match) {
 		return undefined;
 	}
-	return app.metadataCache.getFirstLinkpathDest(match[1].trim(), sourceFile.path) ?? undefined;
+	return resolveLinkpath(app, sourceFile, match[1]);
 }
 
-async function readNote(
+/** Reads a note's parsed frontmatter and its body text (frontmatter stripped). */
+export async function readNote(
 	app: App,
 	file: TFile,
 ): Promise<{ frontmatter: Record<string, unknown>; body: string }> {

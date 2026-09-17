@@ -28,7 +28,7 @@ package set.
 | `preamble` | Literal LaTeX (`\usepackage...`), inserted right after `\documentclass`/`geometry`/`inputenc` |
 | `theorems` | List of environments — see below |
 | `macros` | Literal `\newcommand`/`\renewcommand` text |
-| `bibliography-raw` | Literal LaTeX (e.g. a `thebibliography` block), inserted after the body |
+| `bibliography-raw` | Literal LaTeX (e.g. a `thebibliography` block), inserted after the body. Normally left unset — see "Citations" below, which fills it in automatically |
 | `autoEqnLabels: true` | Number every display equation, not just ones with an explicit `{#eq:...}` |
 
 `preamble`, `theorems`, `macros`, and `bibliography-raw` each also accept
@@ -59,6 +59,27 @@ theorems:
 - `proof` is always available as an environment without being listed here —
   its trigger word is whatever `proofname` is set to (or "Proof" if unset).
 
+### Citations
+
+Each bibliography source is its own note, with `key` (the `\cite{}`
+argument) and `bibitem` (the hardcoded `\bibitem[...]{...}` entry, written
+exactly as it should appear in the exported document) in its frontmatter:
+
+```yaml
+---
+key: kk
+bibitem: |
+  \bibitem[KK]{kk}
+  Koecher, Max, und Aloys Krieg. 2007. Elliptische Funktionen und Modulformen. ...
+---
+```
+
+Citing one from a note's body is `&[[Koecher-Krieg]]` — an `&` right before
+a wikilink to the source note — expanded to a raw `` `\cite{kk}`{=latex} ``
+span. Every distinct source cited this way has its `bibitem` collected and
+assembled into `bibliography-raw` automatically, in citation order, so the
+exported bibliography always matches exactly what got cited.
+
 ## Theorem-like blocks
 
 Written as a bold label, not a fenced div or an Obsidian callout — both of
@@ -67,7 +88,7 @@ copy/paste. This instead mirrors how a paper actually typesets a theorem: a
 bold label opens the statement, an end-of-proof-style mark closes it.
 
 ```
-**Lemma** (\kk S.21f) {#lem-gitter-invariant}
+**Lemma** (&[[Koecher-Krieg]] S.21f) {#lem-gitter-invariant}
 Man nennt
 $$
 \delta := \delta(\omega_1, \omega_2)
