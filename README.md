@@ -11,6 +11,39 @@ Its source is `site/*.md`; the site itself is built and deployed by
 `.github/workflows/pages.yml` on every push — nothing pre-built is checked
 into this repo.
 
+## `lavatex-core` (npm package)
+
+The note-syntax -> LaTeX/Markdown conversion logic above — everything except
+the Obsidian-specific UI/commands — is its own package, `lavatex-core`,
+rooted at this repo's top level (`package.json`/`src/`/`test/`) with no
+dependency on the `obsidian` API. `latex-exporter/` depends on it locally via
+`"lavatex-core": "file:.."`.
+
+It's not published to npm; install it straight from GitHub:
+
+```
+npm install github:fabsch225/LavaTex
+```
+
+Two ways to turn preprocessed markdown into LaTeX:
+
+- `nativePandocBackend()` (the default, from the package's main entry point)
+  shells out to a real `pandoc` + `pandoc-crossref` install on `PATH` — same
+  requirement as the Obsidian plugin above.
+- `wasmPandocBackend()` (`import { wasmPandocBackend } from "lavatex-core/wasm"`)
+  runs pandoc in-process via the WASM binary the
+  [`pandoc-web`](https://github.com/synyx/pandoc-web) demo bundles (the
+  `pandoc-wasm` package) — no native install required, at the cost of
+  `pandoc-crossref` cross-reference support (a separate Haskell binary with
+  no WASM build). It's an opt-in peer dependency: `npm install pandoc-wasm`
+  only if you use it — plain `npm install`ing `lavatex-core` never pulls in
+  its ~60MB binary.
+
+`exportNoteToMarkdown` needs neither backend — it's pandoc-free by design
+(see "Export plain Markdown" below).
+
+Run `lavatex-core`'s own unit tests with `npm test` from the repo root.
+
 ## Install
 
 1. `cd latex-exporter && npm install && npm run build`
@@ -19,9 +52,19 @@ into this repo.
    plugins list.
 3. Requires `pandoc` and `pandoc-crossref` on `PATH`
    (`brew install pandoc pandoc-crossref`).
-4. "Export current note to PDF" additionally requires a LaTeX distribution
-   with `latexmk` on `PATH` (e.g. `brew install --cask mactex-no-gui`, or
-   any TeX Live/MiKTeX install).
+4. "Export current note to PDF" additionally requires a LaTeX engine on
+   `PATH`, picked under Settings → LaTeX Exporter → *LaTeX engine*:
+   - `latexmk` (default, pdfLaTeX) from a LaTeX distribution, e.g.
+     `brew install --cask mactex-no-gui`, or any TeX Live/MiKTeX install;
+   - or [Tectonic](https://tectonic-typesetting.github.io/)
+     (`brew install tectonic`), a small XeTeX-based engine that downloads
+     only the packages a document uses, on first use.
+5. **Mobile (Android/iOS), or desktop without a local TeX install:** steps
+   3–4 are replaced by a remote toolchain you own — a private GitHub repo
+   running a GitHub Actions workflow (default), or a private Google Cloud
+   Run service. Setup guide: [`remote-compiler/README.md`](remote-compiler/README.md).
+   The plugin folder (`manifest.json`, `main.js`, `pandoc/`) has to reach
+   the phone's vault too, e.g. via Obsidian Sync or your usual vault sync.
 
 ## Worked examples
 
@@ -34,6 +77,13 @@ export) real notes, not just prose describing the spec:
 - `examples/snake-lemma.md` — another single note, this time with its own
   inline frontmatter, a `tikz` commutative diagram, and a full proof by
   diagram chase (theorem/equation cross-references, citations, the works).
+- `examples/elliptic-curve-associativity.md` — a transcribed paper with a
+  heavier custom `preamble:` (German `babel`, a custom `\newtheoremstyle`,
+  `listings` with a hand-defined syntax-highlighting style), a `Satz`/
+  `Lemma`/`Korollar` theorem set sharing one counter (via `theorems:`'s
+  `id`/`name` split — the environment stays `theorem`/`lemma`/`kor`
+  internally, but the word you bold is the German name), a nested
+  multi-step proof, and a ` ```python ``` ` code sample.
 - `examples/GBM-Thesis/` — a real, 9-chapter Bachelor's thesis, demonstrating
   **Export project to LaTeX/PDF**: a master note (`thesis-project.md`)
   assembling chapter notes into one document with shared numbering and a
@@ -61,9 +111,10 @@ Twelve commands, all in the command palette:
   pandoc at all (unlike every other export target): bold-statement headers,
   `$$...$$` math, and `\begin{align}` are already valid, readable markdown,
   so they're left exactly as written. What this command actually does:
-  - `&[[Source]]` citations become a readable `[marker]` (the source's
-    `\bibitem[marker]{...}` short label, or a running number) plus a
-    generated `## Bibliography` section — not a raw `\cite{}` span.
+  - `&[[Source]]` citations become a native Markdown footnote reference
+    `[^marker]` (the source's `\bibitem[marker]{...}` short label, or a
+    running number), with a matching `[^marker]: ...` definition collected
+    at the end of the document — not a raw `\cite{}` span.
   - Plain `[[wikilinks]]` (not citations) become just their display text —
     a knowledge-graph link between notes has no meaning to a standalone
     file.
@@ -114,7 +165,7 @@ src/
     theoremBlockPreprocessor.ts bold-statement block -> pandoc fenced div (pure)
     rawEnvironments.ts          $$\begin{align}...\end{align}$$ -> {=latex} raw block (pure)
     tikzBlocks.ts               ```tikz``` block (+ optional Figure: caption) -> {=latex} raw block (pure)
-    codeBlocks.ts               ```r``` block -> raw lstlisting environment  (pure)
+    codeBlocks.ts               ```<lang>``` block (any tag but tikz) -> raw lstlisting environment (pure)
     referenceShortcuts.ts       [#label] -> raw \ref{label} span         (pure)
     inlineMacros.ts             \newcommand in body {=latex} blocks -> text (pure)
     labelCollector.ts           note text -> every {#label} + context    (pure)
@@ -129,7 +180,7 @@ src/
     pathEnv.ts                 PATH augmentation shared by pandoc.ts/latex.ts
     frontmatterRefs.ts         resolve [[wikilink]] frontmatter fields to referenced notes
     citations.ts               &[[Source]] -> raw \cite{key} span + assembled bibliography-raw
-    markdownCitations.ts       &[[Source]] -> readable [marker] + bibliography (markdown export)
+    markdownCitations.ts       &[[Source]] -> [^marker] footnote + definition (markdown export)
     rawLatexFrontmatter.ts     preamble:/macros:/bibliography-raw: -> --include-in-header/-after-body files, not template vars
     pandoc.ts                  spawn pandoc with the fixed flag set (LaTeX export only)
     latex.ts                   spawn latexmk to compile PDF, open it

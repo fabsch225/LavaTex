@@ -8,16 +8,16 @@
  * spliced into `bibliography-raw` automatically, so the exported
  * bibliography always matches exactly what got cited.
  */
-import { type App, type TFile, getFrontMatterInfo, parseYaml, stringifyYaml } from "obsidian";
-
+import { getFrontmatterInfo, parseFrontmatter, stringifyFrontmatter } from "./frontmatter";
 import { readNote, resolveLinkpath } from "./frontmatterRefs";
+import type { NoteRef, NoteReader } from "./notes";
 
 const CITATION = /&\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g;
 
-/** Scans one file's text for `&[[Source]]` citations, adding any newly-seen ones to the shared maps. */
+/** Scans one note's text for `&[[Source]]` citations, adding any newly-seen ones to the shared maps. */
 async function collectCitations(
-	app: App,
-	sourceFile: TFile,
+	reader: NoteReader,
+	sourceNote: NoteRef,
 	rawText: string,
 	keyByLinkpath: Map<string, string>,
 	bibitemsByKey: Map<string, string>,
@@ -27,11 +27,11 @@ async function collectCitations(
 		if (keyByLinkpath.has(linkpath)) {
 			continue;
 		}
-		const target = resolveLinkpath(app, sourceFile, linkpath);
+		const target = resolveLinkpath(reader, sourceNote, linkpath);
 		if (!target) {
 			continue;
 		}
-		const { frontmatter } = await readNote(app, target);
+		const { frontmatter } = await readNote(reader, target);
 		const key = typeof frontmatter["key"] === "string" ? (frontmatter["key"] as string) : target.basename;
 		keyByLinkpath.set(linkpath, key);
 		if (typeof frontmatter["bibitem"] === "string" && !bibitemsByKey.has(key)) {
@@ -51,39 +51,39 @@ function assembleBibliography(bibitemsByKey: ReadonlyMap<string, string>): strin
 	return "\\begin{thebibliography}{9}\n" + [...bibitemsByKey.values()].join("\n\n") + "\n\\end{thebibliography}";
 }
 
-export async function expandCitations(app: App, sourceFile: TFile, rawText: string): Promise<string> {
+export async function expandCitations(reader: NoteReader, sourceNote: NoteRef, rawText: string): Promise<string> {
 	const keyByLinkpath = new Map<string, string>();
 	const bibitemsByKey = new Map<string, string>();
-	await collectCitations(app, sourceFile, rawText, keyByLinkpath, bibitemsByKey);
+	await collectCitations(reader, sourceNote, rawText, keyByLinkpath, bibitemsByKey);
 
 	const text = substituteCitations(rawText, keyByLinkpath);
 	if (bibitemsByKey.size === 0) {
 		return text;
 	}
 
-	const info = getFrontMatterInfo(text);
-	const frontmatter = (info.exists ? (parseYaml(info.frontmatter) as Record<string, unknown>) : undefined) ?? {};
+	const info = getFrontmatterInfo(text);
+	const frontmatter = info.exists ? parseFrontmatter(info.frontmatter) : {};
 	frontmatter["bibliography-raw"] = assembleBibliography(bibitemsByKey);
 
-	return "---\n" + stringifyYaml(frontmatter) + "---\n" + text.slice(info.contentStart);
+	return "---\n" + stringifyFrontmatter(frontmatter) + "---\n" + text.slice(info.contentStart);
 }
 
 /**
- * Same expansion, but sharing one key/bibitem table across every file in a
+ * Same expansion, but sharing one key/bibitem table across every note in a
  * multi-chapter project — so a source cited from two different chapters
  * gets one `\cite{}` key and one bibliography entry, not two, and citation
  * order (and therefore bibliography order) follows first-cited-across-the-
- * whole-project rather than per-file.
+ * whole-project rather than per-note.
  */
 export async function expandCitationsAcrossFiles(
-	app: App,
-	entries: { file: TFile; text: string }[],
+	reader: NoteReader,
+	entries: { note: NoteRef; text: string }[],
 ): Promise<{ texts: string[]; bibliographyRaw: string }> {
 	const keyByLinkpath = new Map<string, string>();
 	const bibitemsByKey = new Map<string, string>();
 
 	for (const entry of entries) {
-		await collectCitations(app, entry.file, entry.text, keyByLinkpath, bibitemsByKey);
+		await collectCitations(reader, entry.note, entry.text, keyByLinkpath, bibitemsByKey);
 	}
 
 	const texts = entries.map((entry) => substituteCitations(entry.text, keyByLinkpath));

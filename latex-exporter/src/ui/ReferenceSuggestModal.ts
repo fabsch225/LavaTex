@@ -1,6 +1,6 @@
 import { type App, type Editor, FuzzySuggestModal } from "obsidian";
 
-import type { LabelEntry } from "../latex/labelCollector";
+import type { LabelEntry } from "lavatex-core";
 
 /** Fuzzy-search picker for reference shortcuts, collected from the current note. */
 export class ReferenceSuggestModal extends FuzzySuggestModal<LabelEntry> {

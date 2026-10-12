@@ -1,15 +1,18 @@
-import { FileSystemAdapter, type App } from "obsidian";
-import * as path from "path";
+import { FileSystemAdapter, normalizePath, Platform, type App, type TFile } from "obsidian";
 
-/** Absolute path to the vault's root folder on disk. */
-export function vaultBasePath(app: App): string {
-	if (!(app.vault.adapter instanceof FileSystemAdapter)) {
-		throw new Error("LaTeX export requires the Obsidian desktop app.");
-	}
-	return app.vault.adapter.getBasePath();
+/** Vault-relative path of `<note basename>.<ext>` next to `file`. */
+export function siblingPath(file: TFile, ext: string): string {
+	const folder = file.parent && file.parent.path !== "/" ? `${file.parent.path}/` : "";
+	return normalizePath(`${folder}${file.basename}.${ext}`);
 }
 
-/** Absolute path to this plugin's own installed folder (where pandoc/ lives). */
-export function pluginDir(app: App, pluginId: string): string {
-	return path.join(vaultBasePath(app), app.vault.configDir, "plugins", pluginId);
+/** Absolute on-disk path of a vault path. Desktop only — the local toolchain needs real paths. */
+export function absolutePath(app: App, vaultPath: string): string {
+	// Check the platform first: on mobile `FileSystemAdapter` isn't a usable class.
+	if (!Platform.isDesktopApp || !(app.vault.adapter instanceof FileSystemAdapter)) {
+		throw new Error("The local LaTeX toolchain requires the Obsidian desktop app.");
+	}
+	return vaultPath === "/" || vaultPath === ""
+		? app.vault.adapter.getBasePath()
+		: app.vault.adapter.getFullPath(normalizePath(vaultPath));
 }

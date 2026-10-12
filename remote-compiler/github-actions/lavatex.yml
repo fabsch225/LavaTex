@@ -1,0 +1,193 @@
+# LavaTex remote compiler (GitHub Actions flavour).
+#
+# Copy this file to `.github/workflows/lavatex.yml` in a PRIVATE repository
+# of your own. The Obsidian plugin then, for every export:
+#   1. pushes the job (preprocessed markdown, template, Lua filter, images)
+#      as `job.json` on a fresh branch `lavatex-job-<id>`;
+#   2. dispatches this workflow with `job: lavatex-job-<id>`;
+#   3. waits for it, reads `result/` back off that branch, and deletes the
+#      branch.
+#
+# Only accounts with write access to the repo can dispatch it, and the
+# plugin's fine-grained token is scoped to this one repo — see
+# remote-compiler/README.md in the LavaTex repo.
+#
+# Two LaTeX engines, picked by the plugin's "LaTeX engine" setting:
+#   - latexmk:  pdfLaTeX in the full TeX Live container (~5 GB pull per run,
+#               no network during the compile);
+#   - tectonic: a ~30 MB binary that fetches only the packages a document
+#               uses; those are kept in the Actions cache between runs.
+name: LavaTex compile
+run-name: lavatex ${{ inputs.job }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Job branch created by the LavaTex plugin
+        required: true
+        type: string
+
+permissions:
+  contents: write # push result/ back onto the job branch
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      JOB: ${{ inputs.job }}
+      # pandoc-crossref is built against one specific pandoc version — bump
+      # both together (keep in sync with ../cloud-run/Dockerfile).
+      PANDOC_VERSION: 3.10.1
+      CROSSREF_VERSION: v0.3.25
+      TECTONIC_VERSION: 0.17.0
+      TEXLIVE_IMAGE: texlive/texlive:latest-full
+      TECTONIC_CACHE_DIR: ${{ github.workspace }}/.tectonic-cache
+    steps:
+      - name: Validate job name
+        run: |
+          [[ "$JOB" =~ ^lavatex-job-[a-z0-9-]+$ ]] || { echo "::error::Invalid job name"; exit 1; }
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.job }}
+          path: job
+
+      - name: Unpack job
+        id: unpack
+        working-directory: job
+        run: |
+          node - <<'EOF'
+          const fs = require("fs");
+          const path = require("path");
+          const job = JSON.parse(fs.readFileSync("job.json", "utf8"));
+          const work = path.resolve("work");
+          const put = (rel, data) => {
+            const target = path.resolve(work, rel);
+            if (path.isAbsolute(rel) || rel.includes("\\") || !target.startsWith(work + path.sep)) {
+              throw new Error(`Refusing file path outside the work dir: ${rel}`);
+            }
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            fs.writeFileSync(target, data);
+          };
+          const p = job.pandoc;
+          const division = p.topLevelDivision ?? "section";
+          if (!/^[a-z-]+$/.test(division)) throw new Error("Invalid topLevelDivision");
+          const engine = job.engine ?? "latexmk";
+          if (!["latexmk", "tectonic"].includes(engine)) throw new Error(`Unknown engine ${engine}`);
+          // Mirrors lavatex-core's nativePandocBackend() (src/pandoc/native.ts).
+          put(".lavatex/input.md", p.markdown);
+          put(".lavatex/template.latex", p.template);
+          put(".lavatex/filter.lua", p.luaFilter);
+          const args = [
+            ".lavatex/input.md", "--from=markdown-latex_macros",
+            "--template", ".lavatex/template.latex",
+            "--lua-filter", ".lavatex/filter.lua",
+            "--filter", "pandoc-crossref",
+            `--top-level-division=${division}`,
+            "-o", "main.tex",
+          ];
+          if (p.headerIncludes) { put(".lavatex/header.tex", p.headerIncludes); args.push("--include-in-header=.lavatex/header.tex"); }
+          if (p.afterBody) { put(".lavatex/afterbody.tex", p.afterBody); args.push("--include-after-body=.lavatex/afterbody.tex"); }
+          for (const [rel, base64] of Object.entries(job.files ?? {})) put(rel, Buffer.from(base64, "base64"));
+          fs.writeFileSync(".lavatex-args", args.join("\n"));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `compile=${job.compile ? "yes" : "no"}\nengine=${engine}\n`);
+          EOF
+
+      - name: Start pulling TeX Live
+        if: steps.unpack.outputs.compile == 'yes' && steps.unpack.outputs.engine == 'latexmk'
+        # The image is big; pull it in the background while pandoc runs.
+        run: nohup docker pull -q "$TEXLIVE_IMAGE" > /tmp/texlive-pull.log 2>&1 &
+
+      - name: Install pandoc + pandoc-crossref
+        run: |
+          curl -fsSL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz" \
+            | sudo tar -xz --strip-components=1 -C /usr/local
+          curl -fsSL "https://github.com/lierdakil/pandoc-crossref/releases/download/${CROSSREF_VERSION}/pandoc-crossref-Linux-X64.tar.xz" \
+            | sudo tar -xJ -C /usr/local/bin
+          pandoc --version | head -1 && pandoc-crossref --version
+
+      - name: Install tectonic
+        if: steps.unpack.outputs.compile == 'yes' && steps.unpack.outputs.engine == 'tectonic'
+        run: |
+          curl -fsSL "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40${TECTONIC_VERSION}/tectonic-${TECTONIC_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin
+          tectonic --version
+
+      - name: Restore tectonic package cache
+        id: tectonic-cache
+        if: steps.unpack.outputs.compile == 'yes' && steps.unpack.outputs.engine == 'tectonic'
+        uses: actions/cache/restore@v4
+        with:
+          path: .tectonic-cache
+          key: tectonic-${{ env.TECTONIC_VERSION }}-none
+          restore-keys: tectonic-${{ env.TECTONIC_VERSION }}-
+
+      - name: Build
+        working-directory: job
+        env:
+          ENGINE: ${{ steps.unpack.outputs.engine }}
+          COMPILE: ${{ steps.unpack.outputs.compile }}
+        run: |
+          set +e
+          mkdir -p result
+          mapfile -t args < .lavatex-args
+          (cd work && pandoc "${args[@]}") > result/log.txt 2>&1
+          if [[ $? -ne 0 ]]; then
+            echo pandoc-failed > result/status; exit 0
+          fi
+          cp work/main.tex result/main.tex
+          if [[ "$COMPILE" != yes ]]; then
+            echo ok > result/status; exit 0
+          fi
+          if [[ "$ENGINE" == tectonic ]]; then
+            # Shell escape is off by default; network is needed to fetch
+            # packages that aren't in the cache yet.
+            (cd work && tectonic main.tex) >> result/log.txt 2>&1
+          else
+            docker pull -q "$TEXLIVE_IMAGE" > /dev/null
+            # No network, no shell escape, unprivileged user.
+            docker run --rm --network none -u "$(id -u):$(id -g)" -e HOME=/tmp \
+              -v "$PWD/work:/work" -w /work "$TEXLIVE_IMAGE" \
+              latexmk -pdf -interaction=nonstopmode -halt-on-error -no-shell-escape main.tex >> result/log.txt 2>&1
+          fi
+          if [[ $? -ne 0 ]]; then
+            echo latex-failed > result/status; exit 0
+          fi
+          cp work/main.pdf result/main.pdf
+          echo ok > result/status
+
+      - name: Push result
+        if: always()
+        working-directory: job
+        run: |
+          [[ -f result/status ]] || { mkdir -p result; echo workflow-failed > result/status; }
+          git config user.name "lavatex"
+          git config user.email "lavatex@users.noreply.github.com"
+          git add result
+          git commit -q -m "LavaTex result"
+          git push -q origin "HEAD:refs/heads/$JOB"
+
+      # Save the package cache only when this run downloaded something new,
+      # keyed by the cache's file list — so it doesn't pile up one entry per run.
+      - name: Fingerprint tectonic package cache
+        id: tectonic-fingerprint
+        if: always() && steps.tectonic-cache.outcome == 'success'
+        run: |
+          fp="$(cd .tectonic-cache 2>/dev/null && find . -type f | sort | sha256sum | cut -c1-16)"
+          echo "key=tectonic-${TECTONIC_VERSION}-${fp}" >> "$GITHUB_OUTPUT"
+
+      - name: Save tectonic package cache
+        if: always() && steps.tectonic-fingerprint.outputs.key != '' && steps.tectonic-fingerprint.outputs.key != steps.tectonic-cache.outputs.cache-matched-key
+        uses: actions/cache/save@v4
+        with:
+          path: .tectonic-cache
+          key: ${{ steps.tectonic-fingerprint.outputs.key }}
+
+      - name: Report status
+        working-directory: job
+        run: |
+          status="$(cat result/status)"
+          echo "status: $status"
+          [[ "$status" == ok ]] || { tail -n 40 result/log.txt; exit 1; }

@@ -101,10 +101,19 @@ export function resolveNumbering(body: string, theorems: TheoremSpec[], numberwi
 			const number = numberFor(eqLevel, eqCounter);
 			const label = (trailingEq ?? ownLineEq)![trailingEq ? 2 : 1];
 			labelToNumber.set(label, number);
+			// `\tag{...}` inside the display math, not `(number)` trailing text
+			// after the closing `$$` — MathJax/KaTeX render `\tag` as a proper
+			// right-aligned equation number, the same way `\begin{equation}`
+			// does; bare trailing text is just inline prose glued onto the
+			// closing delimiter, with no such alignment. Tab-indented so it
+			// visually lines up as part of the equation body in the source,
+			// not flush against the left margin like the `$$` fences.
 			if (trailingEq) {
+				out.push(`\t\\tag{${number}}`);
 				out.push(trailingEq[1]);
+			} else {
+				out.splice(out.length - 1, 0, `\t\\tag{${number}}`);
 			}
-			out[out.length - 1] = out[out.length - 1] + ` (${number})`;
 			continue;
 		}
 

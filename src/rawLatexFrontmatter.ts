@@ -1,7 +1,3 @@
-import * as fs from "fs/promises";
-import * as os from "os";
-import * as path from "path";
-
 /**
  * Pulls `preamble:`/`macros:`/`bibliography-raw:` out of an already-resolved
  * frontmatter object (wikilinks and citations already expanded into literal
@@ -35,12 +31,4 @@ export function extractRawLatexFrontmatter(frontmatter: Record<string, unknown>)
 	const headerIncludes = [preamble, macros].filter(Boolean).join("\n\n");
 
 	return { frontmatter, headerIncludes, afterBody };
-}
-
-/** Writes `content` to a fresh temp file pandoc can `--include-*` from, or returns undefined if it's empty. */
-export async function writeRawLatexInclude(content: string, tag: string): Promise<string | undefined> {
-	if (!content) return undefined;
-	const filePath = path.join(os.tmpdir(), `latex-exporter-${tag}-${process.pid}-${Date.now()}.tex`);
-	await fs.writeFile(filePath, content, "utf8");
-	return filePath;
 }

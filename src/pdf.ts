@@ -1,26 +1,41 @@
-import { spawn } from "child_process";
-import * as path from "path";
-
 import { envWithExtraPath } from "./pathEnv";
+import { nodeRequire } from "./nodeRequire";
+
+/**
+ * - `latexmk`: pdfLaTeX from a full local TeX distribution (MacTeX/TeX Live).
+ * - `tectonic`: a single self-contained XeTeX-based binary that downloads
+ *   only the packages a document uses, on first use, and caches them —
+ *   no TeX distribution install. Needs network the first time a package
+ *   is used; reruns for cross-references on its own.
+ */
+export type LatexEngine = "latexmk" | "tectonic";
 
 export interface CompileJob {
 	texPath: string;
 	cwd: string;
+	/** Defaults to `latexmk`. */
+	engine?: LatexEngine;
 }
 
-/** Compiles a .tex file to PDF via latexmk, rejecting with its log tail on failure. */
+const INSTALL_HINTS: Record<LatexEngine, string> = {
+	latexmk:
+		"Could not find the `latexmk` executable. Install a LaTeX distribution (e.g. MacTeX/TeX Live) and make sure it's on your PATH.",
+	tectonic: "Could not find the `tectonic` executable. Install it (e.g. `brew install tectonic`) and make sure it's on your PATH.",
+};
+
+/** Compiles a .tex file to PDF via latexmk or tectonic, rejecting with its log tail on failure. */
 export function compileToPdf(job: CompileJob): Promise<string> {
+	const { spawn } = nodeRequire<typeof import("child_process")>("child_process");
+	const path = nodeRequire<typeof import("path")>("path");
+	const engine = job.engine ?? "latexmk";
 	const outDir = path.dirname(job.texPath);
-	const args = [
-		"-pdf",
-		"-interaction=nonstopmode",
-		"-halt-on-error",
-		`-output-directory=${outDir}`,
-		job.texPath,
-	];
+	const args =
+		engine === "tectonic"
+			? ["--outdir", outDir, job.texPath]
+			: ["-pdf", "-interaction=nonstopmode", "-halt-on-error", `-output-directory=${outDir}`, job.texPath];
 
 	return new Promise((resolve, reject) => {
-		const proc = spawn("latexmk", args, { cwd: job.cwd, env: envWithExtraPath() });
+		const proc = spawn(engine, args, { cwd: job.cwd, env: envWithExtraPath() });
 
 		let stdout = "";
 		proc.stdout.on("data", (chunk: Buffer) => {
@@ -32,11 +47,7 @@ export function compileToPdf(job: CompileJob): Promise<string> {
 
 		proc.on("error", (err) => {
 			if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-				reject(
-					new Error(
-						"Could not find the `latexmk` executable. Install a LaTeX distribution (e.g. MacTeX/TeX Live) and make sure it's on your PATH.",
-					),
-				);
+				reject(new Error(INSTALL_HINTS[engine]));
 			} else {
 				reject(err);
 			}
@@ -46,7 +57,7 @@ export function compileToPdf(job: CompileJob): Promise<string> {
 				resolve(job.texPath.replace(/\.tex$/, ".pdf"));
 			} else {
 				const tail = stdout.trim().split("\n").slice(-40).join("\n");
-				reject(new Error(tail || `latexmk exited with code ${code}`));
+				reject(new Error(tail || `${engine} exited with code ${code}`));
 			}
 		});
 	});
@@ -54,6 +65,8 @@ export function compileToPdf(job: CompileJob): Promise<string> {
 
 /** Opens a file in the OS default application, throwing if that fails. */
 export function openInDefaultApp(filePath: string): Promise<void> {
+	const { spawn } = nodeRequire<typeof import("child_process")>("child_process");
+	const path = nodeRequire<typeof import("path")>("path");
 	// `start` is a cmd.exe builtin, not its own executable, hence the `cmd /c`
 	// wrapper. The empty `""` is a required placeholder for `start`'s window
 	// title arg, without which a path containing spaces gets misread as one.

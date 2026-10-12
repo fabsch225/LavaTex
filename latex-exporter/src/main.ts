@@ -1,18 +1,27 @@
-import { Notice, Plugin, type TFile, getFrontMatterInfo, parseYaml } from "obsidian";
+import { Notice, Platform, Plugin, type TFile, getFrontMatterInfo, parseYaml } from "obsidian";
 
-import { exportNoteToLatex, exportNoteToMarkdown, exportNoteToPdf } from "./export/exporter";
-import { resolveFrontmatterReferences } from "./export/frontmatterRefs";
-import { exportProjectToLatex, exportProjectToPdf } from "./export/project";
-import { extractInlineMacros } from "./latex/inlineMacros";
-import { collectLabels } from "./latex/labelCollector";
+import { collectLabels, extractInlineMacros, resolveFrontmatterReferences } from "lavatex-core";
+
+import { type ExportEnv, exportNote, exportNoteToMarkdown } from "./export/exporter";
+import { obsidianNoteReader } from "./export/obsidianNoteReader";
+import { exportProject } from "./export/project";
 import { registerMathMacros } from "./obsidian-math/mathJaxMacros";
+import { CloudRunToolchain } from "./remote/cloudRun";
+import { GitHubActionsToolchain } from "./remote/githubActions";
+import type { RemoteToolchain } from "./remote/types";
+import { DEFAULT_SETTINGS, type LatexExporterSettings, LatexExporterSettingTab } from "./settings";
 import { PromptModal } from "./ui/PromptModal";
 import { ReferenceSuggestModal } from "./ui/ReferenceSuggestModal";
 
 const ENVIRONMENT_END_MARK = "∎";
 
 export default class LatexExporterPlugin extends Plugin {
+	settings: LatexExporterSettings = { ...DEFAULT_SETTINGS };
+
 	async onload(): Promise<void> {
+		this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) as Partial<LatexExporterSettings> | null) };
+		this.addSettingTab(new LatexExporterSettingTab(this.app, this));
+
 		this.addCommand({
 			id: "export-note-to-latex",
 			name: "Export current note to LaTeX",
@@ -209,7 +218,7 @@ export default class LatexExporterPlugin extends Plugin {
 
 	private async refreshMathMacros(file: TFile): Promise<void> {
 		const body = await this.app.vault.cachedRead(file);
-		const resolved = await resolveFrontmatterReferences(this.app, file, body);
+		const resolved = await resolveFrontmatterReferences(obsidianNoteReader(this.app), file, body);
 		const frontmatterInfo = getFrontMatterInfo(resolved);
 		const frontmatterMacros = frontmatterInfo.exists
 			? (parseYaml(frontmatterInfo.frontmatter) as Record<string, unknown>)["macros"]
@@ -226,54 +235,57 @@ export default class LatexExporterPlugin extends Plugin {
 		await registerMathMacros(combined);
 	}
 
-	private async runExport(file: TFile): Promise<void> {
+	async saveSettings(): Promise<void> {
+		await this.saveData(this.settings);
+	}
+
+	remoteToolchain(): RemoteToolchain {
+		return this.settings.remoteBackend === "cloudrun"
+			? new CloudRunToolchain(this.app, () => this.settings)
+			: new GitHubActionsToolchain(this.app, () => this.settings);
+	}
+
+	private exportEnv(notice: Notice): ExportEnv {
+		const remote = !Platform.isDesktopApp || this.settings.compileMode === "remote";
+		return {
+			app: this.app,
+			pluginDir: this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`,
+			remote: remote ? this.remoteToolchain() : undefined,
+			engine: this.settings.latexEngine,
+			onProgress: (message) => notice.setMessage(message),
+		};
+	}
+
+	/** Runs one LaTeX/PDF export behind a sticky progress notice. */
+	private async runWithNotice(label: string, work: (env: ExportEnv) => Promise<string>): Promise<void> {
+		const notice = new Notice(`${label}…`, 0);
 		try {
-			const outputPath = await exportNoteToLatex(this.app, file, this.manifest.id);
+			const outputPath = await work(this.exportEnv(notice));
+			notice.hide();
 			new Notice(`Exported to ${outputPath.split("/").pop()}`);
 		} catch (err) {
+			notice.hide();
 			console.error(err);
 			const message = err instanceof Error ? err.message : String(err);
-			new Notice(`LaTeX export failed: ${message.split("\n")[0]}`);
+			// Remote failures carry a log tail after the first line; keep it visible longer.
+			new Notice(`${label} failed: ${message.split("\n").slice(0, 8).join("\n")}`, message.includes("\n") ? 20_000 : 8_000);
 		}
 	}
 
-	private async runPdfExport(file: TFile): Promise<void> {
-		const notice = new Notice("Compiling PDF…", 0);
-		try {
-			const pdfPath = await exportNoteToPdf(this.app, file, this.manifest.id);
-			notice.hide();
-			new Notice(`Exported to ${pdfPath.split("/").pop()}`);
-		} catch (err) {
-			notice.hide();
-			console.error(err);
-			const message = err instanceof Error ? err.message : String(err);
-			new Notice(`PDF export failed: ${message.split("\n")[0]}`);
-		}
+	private runExport(file: TFile): Promise<void> {
+		return this.runWithNotice("LaTeX export", (env) => exportNote(env, file, false));
 	}
 
-	private async runProjectExport(file: TFile): Promise<void> {
-		try {
-			const outputPath = await exportProjectToLatex(this.app, file, this.manifest.id);
-			new Notice(`Exported project to ${outputPath.split("/").pop()}`);
-		} catch (err) {
-			console.error(err);
-			const message = err instanceof Error ? err.message : String(err);
-			new Notice(`Project export failed: ${message.split("\n")[0]}`);
-		}
+	private runPdfExport(file: TFile): Promise<void> {
+		return this.runWithNotice("PDF export", (env) => exportNote(env, file, true));
 	}
 
-	private async runProjectPdfExport(file: TFile): Promise<void> {
-		const notice = new Notice("Compiling project PDF…", 0);
-		try {
-			const pdfPath = await exportProjectToPdf(this.app, file, this.manifest.id);
-			notice.hide();
-			new Notice(`Exported to ${pdfPath.split("/").pop()}`);
-		} catch (err) {
-			notice.hide();
-			console.error(err);
-			const message = err instanceof Error ? err.message : String(err);
-			new Notice(`Project PDF export failed: ${message.split("\n")[0]}`);
-		}
+	private runProjectExport(file: TFile): Promise<void> {
+		return this.runWithNotice("Project export", (env) => exportProject(env, file, false));
+	}
+
+	private runProjectPdfExport(file: TFile): Promise<void> {
+		return this.runWithNotice("Project PDF export", (env) => exportProject(env, file, true));
 	}
 
 	private async runMarkdownExport(file: TFile): Promise<void> {

@@ -161,19 +161,22 @@ not added automatically, since not every project uses TikZ.
 
 ## Code listings
 
-A ` ```r ``` ` fenced block is passed through as a raw `lstlisting`
-environment instead of a literal pandoc code block:
+Any fenced code block with a language tag — ` ```python `, ` ```r `,
+whatever actually describes the code — is passed through as a raw
+`lstlisting` environment instead of a literal pandoc code block (`tikz` is
+the one reserved tag; see "TikZ diagrams" above):
 
-```r
-n <- rnorm(10, mean = 0, sd = 1)
-mean(n)
+```python
+def f(x):
+    return x + 1
 ```
 
 Pandoc's own fenced-code handling goes through skylighting (its own
 preamble macros, its own styling), which doesn't match a `listings`-based
-project. Since `\lstset{...}` applies globally, the emitted environment
-carries no `[language=...]` of its own — set that once via `\lstset` in
-`preamble:` (or a shared macros note), same as any hand-written thesis
+project. The language tag itself is discarded — it's there for your own
+editor's syntax highlighting, not passed to `listings` — since
+`\lstset{...}` applies globally: set the actual language once via `\lstset`
+in `preamble:` (or a shared macros note), same as any hand-written thesis
 already does. Needs `\usepackage{listings}` in `preamble:` — not added
 automatically.
 

@@ -3,21 +3,18 @@
  * `bibliography-raw:`, `preamble:`, `theorems:`) to content pulled from
  * another note, so that content can live in its own file instead of being
  * inlined in every note that wants it.
- *
- * Works directly off raw file text (`getFrontMatterInfo`/`parseYaml`), not
- * `MetadataCache`, so a just-created or just-edited referenced note doesn't
- * need to wait for Obsidian's cache to catch up.
  */
-import { type App, type TFile, getFrontMatterInfo, parseYaml, stringifyYaml } from "obsidian";
+import { getFrontmatterInfo, parseFrontmatter, stringifyFrontmatter } from "./frontmatter";
+import type { NoteRef, NoteReader } from "./notes";
 
 const WIKILINK = /^\[\[([^\]|]+)(?:\|[^\]]*)?\]\]$/;
 
-/** Resolves an Obsidian linkpath (a wikilink's target, without the `[[ ]]`) to a file. */
-export function resolveLinkpath(app: App, sourceFile: TFile, linkpath: string): TFile | undefined {
-	return app.metadataCache.getFirstLinkpathDest(linkpath.trim(), sourceFile.path) ?? undefined;
+/** Resolves a wikilink's target (without the `[[ ]]`) to a note. */
+export function resolveLinkpath(reader: NoteReader, sourceNote: NoteRef, linkpath: string): NoteRef | undefined {
+	return reader.resolveLink(sourceNote, linkpath.trim());
 }
 
-function resolveWikilinkFile(app: App, sourceFile: TFile, value: unknown): TFile | undefined {
+function resolveWikilinkNote(reader: NoteReader, sourceNote: NoteRef, value: unknown): NoteRef | undefined {
 	if (typeof value !== "string") {
 		return undefined;
 	}
@@ -25,17 +22,17 @@ function resolveWikilinkFile(app: App, sourceFile: TFile, value: unknown): TFile
 	if (!match) {
 		return undefined;
 	}
-	return resolveLinkpath(app, sourceFile, match[1]);
+	return resolveLinkpath(reader, sourceNote, match[1]);
 }
 
 /** Reads a note's parsed frontmatter and its body text (frontmatter stripped). */
 export async function readNote(
-	app: App,
-	file: TFile,
+	reader: NoteReader,
+	note: NoteRef,
 ): Promise<{ frontmatter: Record<string, unknown>; body: string }> {
-	const raw = await app.vault.cachedRead(file);
-	const info = getFrontMatterInfo(raw);
-	const frontmatter = info.exists ? ((parseYaml(info.frontmatter) as Record<string, unknown>) ?? {}) : {};
+	const raw = await reader.read(note);
+	const info = getFrontmatterInfo(raw);
+	const frontmatter = info.exists ? parseFrontmatter(info.frontmatter) : {};
 	return { frontmatter, body: raw.slice(info.contentStart) };
 }
 
@@ -50,27 +47,31 @@ const TEXT_FIELDS = ["macros", "bibliography-raw", "preamble"] as const;
  * left as literal inline values — the original style — pass through
  * unchanged, so both keep working side by side.
  */
-export async function resolveFrontmatterReferences(app: App, file: TFile, rawText: string): Promise<string> {
-	const info = getFrontMatterInfo(rawText);
+export async function resolveFrontmatterReferences(
+	reader: NoteReader,
+	note: NoteRef,
+	rawText: string,
+): Promise<string> {
+	const info = getFrontmatterInfo(rawText);
 	if (!info.exists) {
 		return rawText;
 	}
-	const frontmatter = (parseYaml(info.frontmatter) as Record<string, unknown>) ?? {};
+	const frontmatter = parseFrontmatter(info.frontmatter);
 
 	let changed = false;
 	for (const key of TEXT_FIELDS) {
-		const target = resolveWikilinkFile(app, file, frontmatter[key]);
+		const target = resolveWikilinkNote(reader, note, frontmatter[key]);
 		if (!target) {
 			continue;
 		}
-		const { body } = await readNote(app, target);
+		const { body } = await readNote(reader, target);
 		frontmatter[key] = body.trim();
 		changed = true;
 	}
 
-	const theoremsTarget = resolveWikilinkFile(app, file, frontmatter["theorems"]);
+	const theoremsTarget = resolveWikilinkNote(reader, note, frontmatter["theorems"]);
 	if (theoremsTarget) {
-		const { frontmatter: referenced } = await readNote(app, theoremsTarget);
+		const { frontmatter: referenced } = await readNote(reader, theoremsTarget);
 		frontmatter["theorems"] = referenced["theorems"];
 		changed = true;
 	}
@@ -78,5 +79,5 @@ export async function resolveFrontmatterReferences(app: App, file: TFile, rawTex
 	if (!changed) {
 		return rawText;
 	}
-	return "---\n" + stringifyYaml(frontmatter) + "---\n" + rawText.slice(info.contentStart);
+	return "---\n" + stringifyFrontmatter(frontmatter) + "---\n" + rawText.slice(info.contentStart);
 }

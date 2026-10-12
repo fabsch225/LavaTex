@@ -1,0 +1,40 @@
+{
+	"name": "lavatex-core",
+	"version": "0.1.0",
+	"description": "Note-syntax -> LaTeX/Markdown conversion core behind the LavaTex Obsidian plugin: pandoc-crossref-flavored preprocessing, citations, theorem numbering, and (optionally) a bundled WASM pandoc so no native pandoc install is required.",
+	"private": false,
+	"type": "commonjs",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./wasm": {
+			"types": "./dist/wasm.d.ts",
+			"default": "./dist/wasm.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/fabsch225/LavaTex.git"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"prepare": "npm run build",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"js-yaml": "^4.1.0"
+	},
+	"devDependencies": {
+		"@types/js-yaml": "^4.0.9",
+		"@types/node": "^20.0.0",
+		"typescript": "^5.5.0",
+		"vitest": "^2.1.0"
+	}
+}

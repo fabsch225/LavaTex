@@ -1,0 +1,4 @@
+# Only the Dockerfile and server.mjs are needed to build the image.
+*
+!Dockerfile
+!server.mjs

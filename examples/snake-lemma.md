@@ -44,6 +44,8 @@ surjective, and the image of the first equals the kernel of the second.
 Suppose we are given a commutative diagram of $R$-modules with exact rows
 
 ```tikz
+\begin{document}
+\usetikzlibrary{matrix, arrows.meta}
 \begin{tikzpicture}[>=Stealth]
 \matrix (m) [matrix of math nodes, row sep=3em, column sep=2.5em,
   text height=1.6ex, text depth=0.3ex] {
@@ -62,6 +64,7 @@ Suppose we are given a commutative diagram of $R$-modules with exact rows
 \draw[->] (m-1-3) -- node[left]{$\beta$} (m-2-3);
 \draw[->] (m-1-4) -- node[left]{$\gamma$} (m-2-4);
 \end{tikzpicture}
+\end{document}
 ```
 Figure: Two short exact rows, connected by three vertical maps making both squares commute. {#fig:snake-diagram}
 
@@ -120,7 +123,9 @@ $\ker\beta$.
 *Exactness at $\ker\gamma$.* If $a \in \ker\beta$, then in the construction
 of $\delta(f(a))$ we may take $a$ itself as the preimage of $f(a)$, giving
 $\beta(a) = g'(0)$, so $\delta(f(a)) = \overline{0} = 0$: the composite
-$\ker\beta \to \ker\gamma \xrightarrow{\delta} \operatorname{coker}\alpha$
+$$
+\ker\beta \to \ker\gamma \xrightarrow{\delta} \operatorname{coker}\alpha
+$$
 is zero. Conversely, if $\delta(x) = 0$ for $x \in \ker\gamma$, then with
 $a, b'$ as in the construction, $\overline{b'} = 0$ means
 $b' = \alpha(a')$ for some $a' \in A'$; then
@@ -134,12 +139,16 @@ is the image of an element of $\ker\beta$.
 construction of $\delta(x)$ for some $x \in \ker\gamma$, its image under
 $B' \to B \to \operatorname{coker}\beta$ is $\overline{\beta(a)}$, and
 $\beta(a) \in \operatorname{im}\beta$ by definition — so the composite
-$\ker\gamma \xrightarrow{\delta} \operatorname{coker}\alpha \to
-\operatorname{coker}\beta$ is zero. Conversely, suppose $b' \in B'$ maps to
+$$
+\ker\gamma \xrightarrow{\delta} \operatorname{coker}\alpha \to \operatorname{coker}\beta
+$$
+is zero. Conversely, suppose $b' \in B'$ maps to
 $0$ in $\operatorname{coker}\beta$, i.e. $g'(b') = \beta(a)$ for some
 $a \in A$. Let $x := f(a)$; then
-$\gamma(x) = \gamma(f(a)) = g(\beta(a)) = g(g'(b')) = 0$, so $x \in
-\ker\gamma$, and by construction $\delta(x) = \overline{b'}$. So
+$$
+\gamma(x) = \gamma(f(a)) = g(\beta(a)) = g(g'(b')) = 0,
+$$
+so $x \in \ker\gamma$, and by construction $\delta(x) = \overline{b'}$. So
 $\overline{b'} \in \operatorname{im}\delta$.
 
 *Exactness at $\operatorname{coker}\beta$ and $\operatorname{coker}\gamma$.*
@@ -164,8 +173,8 @@ algebra &[[Lang-Algebra]].
 ## An application: the long exact sequence in homology
 
 **Corollary** (Long exact homology sequence) {#cor-les}
-Let $0 \to A_\bullet \to B_\bullet \to C_\bullet \to 0$ be a short exact
-sequence of chain complexes of $R$-modules (a short exact sequence of
+Let $0 \to A_\bullet \to B_\bullet \to C_\bullet \to 0$ be a short exact sequence
+of chain complexes of $R$-modules (a short exact sequence of
 modules in every degree, commuting with the differentials). Then there is a
 long exact sequence
 $$
@@ -175,18 +184,24 @@ $$
 
 **Proof**
 Apply the Snake Lemma ([#lem-snake]) to the diagram with rows
-$A_n/\operatorname{im}\partial_{n+1} \to B_n/\operatorname{im}\partial_{n+1}
-\to C_n/\operatorname{im}\partial_{n+1} \to 0$ and
-$0 \to \ker\partial_{n-1}^A \to \ker\partial_{n-1}^B \to
-\ker\partial_{n-1}^C$, both exact by the snake lemma's own hypotheses
+$$
+A_n/\operatorname{im}\partial_{n+1} \to B_n/\operatorname{im}\partial_{n+1} \to C_n/\operatorname{im}\partial_{n+1} \to 0
+$$
+and
+$$
+0 \to \ker\partial_{n-1}^A \to \ker\partial_{n-1}^B \to \ker\partial_{n-1}^C,
+$$
+both exact by the snake lemma's own hypotheses
 applied one degree at a time, with vertical maps induced by the degree-$n$
 differentials. The resulting six-term exact sequence
 $$
 \ker\partial_n^A/\!\operatorname{im} \to \ker\partial_n^B/\!\operatorname{im} \to \ker\partial_n^C/\!\operatorname{im} \xrightarrow{\delta} \operatorname{coker} \to \operatorname{coker} \to \operatorname{coker}
 $$
-is exactly $H_n(A_\bullet) \to H_n(B_\bullet) \to H_n(C_\bullet)
-\xrightarrow{\partial} H_{n-1}(A_\bullet) \to H_{n-1}(B_\bullet) \to
-H_{n-1}(C_\bullet)$ once the two cokernel/kernel identifications above are
+is exactly
+$$
+H_n(A_\bullet) \to H_n(B_\bullet) \to H_n(C_\bullet) \xrightarrow{\partial} H_{n-1}(A_\bullet) \to H_{n-1}(B_\bullet) \to H_{n-1}(C_\bullet)
+$$
+once the two cokernel/kernel identifications above are
 unwound; splicing these six-term sequences together for every $n$ gives the
 claimed long exact sequence, with $\partial$ the connecting homomorphism
 $\delta$ from [#lem-snake] &[[Weibel]].
