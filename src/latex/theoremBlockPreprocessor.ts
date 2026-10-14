@@ -2,7 +2,8 @@
  * Translates plain bold-statement theorem blocks into the pandoc fenced-div
  * syntax `pandoc/theorems.lua` turns into amsthm environments.
  *
- * Callouts (the previous approach) required every line to carry a `>`
+ * Callouts (still supported, rewritten into this syntax by
+ * `calloutBlocks.ts`) require every line to carry a `>`
  * prefix, which was painful to edit — multi-line math and copy/paste both
  * fight the quote markers. This instead mirrors how theorems are actually
  * typeset in a paper: a bold label starts the statement, an end-of-proof
@@ -108,7 +109,7 @@ function parseHeader(line: string, triggers: ReadonlyMap<string, string>): Block
 	let rest = line.slice(closeIdx + 2).trimStart();
 	let title = "";
 	if (rest.startsWith("(")) {
-		const end = rest.indexOf(")");
+		const end = matchingParen(rest);
 		if (end !== -1) {
 			title = rest.slice(1, end);
 			rest = rest.slice(end + 1).trimStart();
@@ -129,6 +130,16 @@ function parseHeader(line: string, triggers: ReadonlyMap<string, string>): Block
 	}
 
 	return { id, title, label, rest };
+}
+
+/** Index of the `)` closing `text`'s leading `(`, so a title like `$f(x)$` stays whole; -1 if unbalanced. */
+function matchingParen(text: string): number {
+	let depth = 0;
+	for (let i = 0; i < text.length; i++) {
+		if (text[i] === "(") depth++;
+		else if (text[i] === ")" && --depth === 0) return i;
+	}
+	return -1;
 }
 
 function escapeAttr(value: string): string {

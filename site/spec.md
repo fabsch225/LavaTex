@@ -93,9 +93,9 @@ prose, never a broken link or literal double brackets.
 
 ## Theorem-like blocks
 
-Written as a bold label, not a fenced div or an Obsidian callout — both of
-those require a `>` prefix on every line, which fights multi-line math and
-copy/paste. This instead mirrors how a paper actually typesets a theorem: a
+Written as a bold label, not a fenced div — or as an Obsidian callout (see
+below), though a callout's `>` prefix on every line fights multi-line math
+and copy/paste. This instead mirrors how a paper actually typesets a theorem: a
 bold label opens the statement, an end-of-proof-style mark closes it.
 
 ```
@@ -134,6 +134,25 @@ Rules:
   structure.
 - The command **"Insert environment end mark (∎)"** inserts the character if
   you don't want to type/paste it — worth a hotkey.
+
+### Callouts
+
+Obsidian callouts are an alternative spelling of the same blocks:
+
+```
+> [!lemma] Gitterinvarianz {#lem-gitter-invariant}
+> Man nennt ...
+> > [!beweis]
+> > Betrachte ...
+```
+
+The callout type is matched like a bold word (a `theorems[].name` or the
+`proofname`) or against a `theorems[].id`, case-insensitively; the title
+becomes `\begin{env}[title]`, a trailing `{#label}` becomes `\label{label}`,
+and the callout ends where its `>` lines do — no `∎` needed. Nested
+callouts (`> >`) nest environments. A callout whose type isn't a declared
+environment (`> [!info]`) is exported as an ordinary blockquote with a bold
+title. See `examples/problem-sheet.md`.
 
 ## TikZ diagrams
 

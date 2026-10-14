@@ -1,6 +1,6 @@
 /**
  * Scans a note for every `{#label}` attribute — bold-statement theorem
- * headers and labelled `$$...$$ {#eq:foo}` equations both use this same
+ * headers, callout headers (`> [!lemma] Title {#lem-foo}`) and labelled `$$...$$ {#eq:foo}` equations both use this same
  * syntax — so the "insert reference" command can offer them in a picker
  * instead of the user hunting down and retyping a label by hand.
  */
@@ -12,6 +12,7 @@ export interface LabelEntry {
 
 const LABEL_ATTR = /\{#([\w:-]+)\}/g;
 const BOLD_HEADER = /^\*\*([^*]+)\*\*/;
+const CALLOUT_HEADER = /^(?:[ \t]{0,3}>[ \t]?)+(?=\[!)/;
 
 export function collectLabels(noteText: string): LabelEntry[] {
 	const lines = noteText.split("\n");
@@ -25,6 +26,8 @@ export function collectLabels(noteText: string): LabelEntry[] {
 			const label = match[1];
 			const context = BOLD_HEADER.test(line)
 				? line.replace(LABEL_ATTR, "").trim()
+				: CALLOUT_HEADER.test(line)
+				? line.replace(CALLOUT_HEADER, "").replace(LABEL_ATTR, "").trim()
 				: (nearestPrecedingText(lines, i) ?? label);
 			entries.push({ label, context });
 		}

@@ -5,6 +5,7 @@
 import { getFrontmatterInfo, parseFrontmatter } from "./frontmatter";
 import { expandCitations } from "./citations";
 import { resolveFrontmatterReferences } from "./frontmatterRefs";
+import { convertCallouts } from "./latex/calloutBlocks";
 import { convertCodeBlocksToRaw } from "./latex/codeBlocks";
 import { convertAlignBlocksToRaw } from "./latex/rawEnvironments";
 import { expandReferenceShortcuts } from "./latex/referenceShortcuts";
@@ -31,7 +32,10 @@ export async function preprocessNoteForLatex(reader: NoteReader, note: NoteRef, 
 
 	return expandReferenceShortcuts(
 		preprocessTheoremBlocks(
-			convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(frontmatterBlock + body))),
+			convertCallouts(
+				convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(frontmatterBlock + body))),
+				triggers,
+			),
 			triggers,
 		),
 	);
@@ -41,7 +45,10 @@ export async function preprocessNoteForLatex(reader: NoteReader, note: NoteRef, 
 export function preprocessChapterBody(body: string, triggers: ReadonlyMap<string, string>): string {
 	return expandReferenceShortcuts(
 		preprocessTheoremBlocks(
-			convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(stripWikilinks(body)))),
+			convertCallouts(
+				convertTikzBlocksToRaw(convertCodeBlocksToRaw(convertAlignBlocksToRaw(stripWikilinks(body)))),
+				triggers,
+			),
 			triggers,
 		),
 	);

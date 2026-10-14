@@ -287,8 +287,8 @@ wikilink to the source note — which `citations.ts` expands to a raw
 citation order), so the exported bibliography always matches exactly what
 got cited — no `bibliography-raw` field to maintain by hand.
 
-Body — theorem-like environments are bold statements, not fenced divs or
-callouts (both were painful to edit — every line needed a `>` prefix):
+Body — theorem-like environments are bold statements (or, alternatively,
+callouts — see below):
 
 ```
 **Lemma** (&[[Koecher-Krieg]] S.21f) {#lem-gitter-invariant}
@@ -340,6 +340,23 @@ opens the statement, an end-of-proof-style mark (`∎`) closes it.
 - Anything else pandoc's markdown can't express directly (a mid-document
   `\newcommand`, an environment MathJax doesn't understand) goes in an
   explicit raw block: `` ```{=latex} ... ``` ``.
+
+Obsidian callouts work too, as an alternative spelling of the same blocks:
+
+```
+> [!lemma] Gitterinvarianz {#lem-gitter-invariant}
+> Man nennt ...
+> > [!beweis]
+> > Betrachte ...
+```
+
+The callout type is matched like a bold word (a `theorems[].name` or the
+`proofname`) or against a `theorems[].id`, case-insensitively; the title
+becomes `\begin{env}[title]`, a trailing `{#label}` becomes `\label{label}`,
+and the callout ends where its `>` lines do — no `∎` needed. Nested
+callouts (`> >`) nest environments. A callout whose type isn't a declared
+environment (`> [!info]`) is exported as an ordinary blockquote with a bold
+title. See `examples/problem-sheet.md`.
 
 Math (`$...$`, `$$...$$`) is passed to pandoc as-is — never reinterpreted —
 so any macro from `macros:` just works in the exported `.tex`.
@@ -520,6 +537,7 @@ callouts (`> [!theorem] ...`) and `callout-manager/` is a fork of
 [eth-p/obsidian-callout-manager](https://github.com/eth-p/obsidian-callout-manager)
 pre-seeded with presets for that. Callouts turned out to be unpleasant to
 edit (every line needs a `>` prefix, which fights multi-line math and
-copy/paste), so the bold-statement syntax above replaced them, and this
-plugin is no longer installed in the vault. The fork is left in this repo in
+copy/paste), so the bold-statement syntax above became the primary one;
+callouts are still exported the same way, but this plugin is no longer
+installed in the vault. The fork is left in this repo in
 case it's useful for something else later; delete `callout-manager/` if not.

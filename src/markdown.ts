@@ -25,6 +25,10 @@
  * - Frontmatter is trimmed to `title`/`author`/`date` — the rest
  *   (`preamble`, `theorems`, LaTeX layout knobs, ...) has no meaning here.
  *
+ * - Obsidian callouts for a declared environment (`> [!lemma] ...`) become
+ *   bold-statement blocks, so they're numbered too; any other callout stays
+ *   a blockquote with its `[!type]` marker turned into a bold title.
+ *
  * Bold-statement headers, `$$...$$` math, and `\begin{align}` are left
  * exactly as written: already valid, readable markdown, nothing to do.
  *
@@ -33,9 +37,11 @@
  * package itself.
  */
 import { getFrontmatterInfo, parseFrontmatter, stringifyFrontmatter } from "./frontmatter";
+import { convertCallouts } from "./latex/calloutBlocks";
 import { expandMacros, parseMacros } from "./latex/macroExpansion";
 import { collapseBlankLines, stripEnvironmentEndMarks, unwrapRawLatexSpans } from "./latex/markdownNormalizer";
 import { type TheoremSpec, resolveNumbering } from "./latex/markdownNumbering";
+import { collectEnvironmentTriggers } from "./latex/theoremEnvironments";
 import { stripWikilinks } from "./latex/wikilinks";
 import { expandCitationsForMarkdown } from "./markdownCitations";
 import { resolveFrontmatterReferences } from "./frontmatterRefs";
@@ -63,6 +69,9 @@ export async function exportNoteToMarkdown(reader: NoteReader, note: NoteRef, ra
 	}
 
 	let restBody = stripWikilinks((info.exists ? body.slice(info.contentStart) : body).trim());
+	// Callouts become bold-statement blocks so they're numbered like any
+	// other theorem-like block; their `∎` is stripped again right after.
+	restBody = collapseBlankLines(stripEnvironmentEndMarks(convertCallouts(restBody, collectEnvironmentTriggers(frontmatter))));
 	restBody = expandMacros(restBody, parseMacros(macros));
 	restBody = resolveNumbering(restBody, theorems, numberwithin);
 
