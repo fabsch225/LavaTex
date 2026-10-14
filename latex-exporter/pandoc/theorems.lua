@@ -3,10 +3,23 @@
 -- div's class, so any \newtheorem defined via the "theorems" YAML field
 -- (see template.latex) works here without touching this filter.
 
+-- `proof` always exists (amsthm); every other environment is whatever the
+-- note's `theorems:` declares, collected by `Meta` below. The rest of this
+-- list is only a fallback for documents without a `theorems:` field.
 local known = {
 	theorem = true, lemma = true, prop = true, definition = true,
 	bem = true, kor = true, deflemma = true, proof = true,
 }
+
+function Meta(meta)
+	if meta.theorems then
+		for _, env in ipairs(meta.theorems) do
+			if env.id then
+				known[pandoc.utils.stringify(env.id)] = true
+			end
+		end
+	end
+end
 
 -- Attribute values are plain strings pandoc never reparses as markdown, so
 -- a title with e.g. a `` `\cite{key}`{=latex} `` raw-inline span (or math)
@@ -40,3 +53,10 @@ function Div(el)
 	end
 	return el
 end
+
+-- Two passes, in this order: within a single filter pandoc visits blocks
+-- before metadata, so `known` must be filled in before any Div is seen.
+return {
+	{ Meta = Meta },
+	{ Div = Div },
+}

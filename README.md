@@ -66,6 +66,22 @@ Run `lavatex-core`'s own unit tests with `npm test` from the repo root.
    The plugin folder (`manifest.json`, `main.js`, `pandoc/`) has to reach
    the phone's vault too, e.g. via Obsidian Sync or your usual vault sync.
 
+## Claude skill
+
+`skills/lavatex/` is a [Claude skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
+for writing notes in this syntax: the rules, a worked example, and
+`scripts/check_note.mjs`, which runs a note through the real export pipeline
+(lavatex-core → pandoc → latexmk/Tectonic) and reports mistakes. For Claude
+Code, link it into your skills folder:
+
+```
+ln -s "$PWD/skills/lavatex" ~/.claude/skills/lavatex
+```
+
+For claude.ai, zip the `skills/lavatex/` folder and upload it under
+Settings → Capabilities → Skills. The checker needs a local pandoc there,
+so expect only the writing rules to apply.
+
 ## Worked examples
 
 `examples/` is itself an Obsidian vault — open it directly to see (and
