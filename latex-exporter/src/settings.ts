@@ -5,6 +5,8 @@ import type { LatexEngine } from "lavatex-core";
 import type LatexExporterPlugin from "./main";
 
 export interface LatexExporterSettings {
+	/** Vault path of the note whose frontmatter fills in what an exported note doesn't set; "" for none. */
+	defaultFrontmatterNote: string;
 	/** Desktop only — mobile always compiles remotely. */
 	compileMode: "local" | "remote";
 	/** Used both locally and remotely. */
@@ -21,6 +23,7 @@ export interface LatexExporterSettings {
 }
 
 export const DEFAULT_SETTINGS: LatexExporterSettings = {
+	defaultFrontmatterNote: "",
 	compileMode: "local",
 	latexEngine: "latexmk",
 	remoteBackend: "github",
@@ -43,6 +46,21 @@ export class LatexExporterSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		const settings = this.plugin.settings;
 		containerEl.empty();
+
+		new Setting(containerEl)
+			.setName("Default frontmatter")
+			.setDesc(
+				"A note whose frontmatter (preamble, theorems, author, ...) every export uses for the fields the exported note doesn't set itself. The title always defaults to the note's file name. Leave empty for none.",
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("Util/Default frontmatter.md")
+					.setValue(settings.defaultFrontmatterNote)
+					.onChange(async (value) => {
+						settings.defaultFrontmatterNote = value.trim();
+						await this.plugin.saveSettings();
+					}),
+			);
 
 		if (Platform.isDesktopApp) {
 			new Setting(containerEl)

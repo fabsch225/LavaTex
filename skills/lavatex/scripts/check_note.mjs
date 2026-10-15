@@ -8,6 +8,7 @@
  *
  *   --engine latexmk|tectonic   LaTeX engine (default: whichever is installed, latexmk first)
  *   --no-compile                stop after pandoc (only checks the note -> .tex step)
+ *   --defaults <note>           default-frontmatter note (vault path), like the plugin setting
  *
  * Writes <note>.tex / <note>.pdf next to the note, exactly like the plugin.
  * Needs pandoc + pandoc-crossref on PATH, plus latexmk or tectonic to compile.
@@ -28,10 +29,14 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
 const flags = new Set(argv.filter((a) => a.startsWith("--") && !a.includes("=")));
-const engineArg = argv.includes("--engine") ? argv[argv.indexOf("--engine") + 1] : undefined;
-const [vaultArg, noteArg] = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--engine");
+const valueOf = (flag) => (argv.includes(flag) ? argv[argv.indexOf(flag) + 1] : undefined);
+const engineArg = valueOf("--engine");
+const defaultsArg = valueOf("--defaults");
+const [vaultArg, noteArg] = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--engine" && argv[i - 1] !== "--defaults");
 if (!vaultArg || !noteArg) {
-	console.error("usage: node check_note.mjs <vault-dir> <note.md relative to vault> [--engine latexmk|tectonic] [--no-compile]");
+	console.error(
+		"usage: node check_note.mjs <vault-dir> <note.md relative to vault> [--engine latexmk|tectonic] [--defaults <note.md>] [--no-compile]",
+	);
 	process.exit(2);
 }
 const vault = path.resolve(vaultArg);
@@ -113,7 +118,12 @@ if (!notes.includes(notePath)) fail(`No note ${notePath} in ${vault}`);
 const core = loadCore();
 const assets = loadAssets();
 const note = ref(notePath);
-const raw = readFileSync(path.join(vault, notePath), "utf8");
+let raw = readFileSync(path.join(vault, notePath), "utf8");
+if (defaultsArg && !notes.includes(defaultsArg)) fail(`No default-frontmatter note ${defaultsArg} in ${vault}`);
+// Same as the plugin: default-frontmatter fields fill in, title defaults to the file name.
+if (core.applyDefaultFrontmatter) {
+	raw = await core.applyDefaultFrontmatter(reader, note, raw, defaultsArg ? ref(defaultsArg) : undefined);
+}
 const noteDir = path.dirname(path.join(vault, notePath));
 const isProject = /^chapters:/m.test(raw.split(/^---$/m)[1] ?? "");
 

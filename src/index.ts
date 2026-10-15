@@ -7,6 +7,7 @@ export type { LabelEntry } from "./latex/labelCollector";
 export { collectLabels } from "./latex/labelCollector";
 export { extractInlineMacros } from "./latex/inlineMacros";
 export { resolveFrontmatterReferences } from "./frontmatterRefs";
+export { applyDefaultFrontmatter } from "./defaultFrontmatter";
 
 export type { LatexAssets } from "./latexExport";
 export { exportNoteToLatex } from "./latexExport";

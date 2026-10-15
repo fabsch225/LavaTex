@@ -221,8 +221,13 @@ work across chapters. Run *Export project to PDF* from the master note.
 ## Validating
 
 ```sh
-node <skill-dir>/scripts/check_note.mjs <vault-dir> <note-path-relative-to-vault> [--engine latexmk|tectonic] [--no-compile]
+node <skill-dir>/scripts/check_note.mjs <vault-dir> <note-path-relative-to-vault> [--engine latexmk|tectonic] [--defaults <note>] [--no-compile]
 ```
+
+If the user set a **Default frontmatter** note in the plugin settings
+(`<vault>/.obsidian/plugins/latex-exporter/data.json`,
+`defaultFrontmatterNote`), pass it as `--defaults`: its fields fill in
+whatever the note doesn't set, and the title defaults to the file name.
 
 It runs the real LavaTex pipeline (lavatex-core → pandoc + pandoc-crossref
 → latexmk or Tectonic), writes `<note>.tex`/`.pdf` next to the note like

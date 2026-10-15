@@ -57,6 +57,18 @@ concatenated (a linked theorems note may itself link further notes), and
 if two sources declare the same `id` the first one wins. A link that
 doesn't resolve is an export error.
 
+### Default frontmatter
+
+Settings → LaTeX Exporter → **Default frontmatter** names a note (e.g.
+`Util/Default frontmatter.md`) whose frontmatter every export falls back
+on: any field the exported note doesn't set itself — preamble, theorems,
+macros, author, layout — comes from there, its `[[links]]` resolved from the
+template note. The title is the exception: it's always the note's own
+`title:`, else its file name, never the template's. So a bare scratch note
+with no frontmatter at all compiles to a proper PDF. The template is a
+normal note, so it can double as an Obsidian template for new notes. See
+`examples/Util/Default frontmatter.md` and `examples/Scratch/Quick note.md`.
+
 ### `theorems`
 
 A list of environments to declare, each either:

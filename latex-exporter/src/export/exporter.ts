@@ -11,6 +11,7 @@
 import { normalizePath, Platform, type App, type TFile } from "obsidian";
 
 import {
+	applyDefaultFrontmatter,
 	compileToPdf,
 	exportNoteToLatex as coreExportNoteToLatex,
 	exportNoteToMarkdown as coreExportNoteToMarkdown,
@@ -32,7 +33,20 @@ export interface ExportEnv {
 	/** Set to compile remotely; undefined means the local toolchain. */
 	remote?: RemoteToolchain;
 	engine: LatexEngine;
+	/** Vault path of the default-frontmatter note (settings); "" for none. */
+	defaultFrontmatterNote: string;
 	onProgress: (message: string) => void;
+}
+
+/** `file`'s raw text with the default-frontmatter note's fields (and a file-name title) filled in. */
+export async function readWithDefaults(app: App, file: TFile, defaultFrontmatterNote: string): Promise<string> {
+	let template: TFile | undefined;
+	if (defaultFrontmatterNote) {
+		const path = normalizePath(defaultFrontmatterNote.endsWith(".md") ? defaultFrontmatterNote : `${defaultFrontmatterNote}.md`);
+		template = app.vault.getFileByPath(path) ?? undefined;
+		if (!template) throw new Error(`Default frontmatter note not found: ${path}`);
+	}
+	return applyDefaultFrontmatter(obsidianNoteReader(app), file, await app.vault.read(file), template);
 }
 
 export async function readLatexAssets(env: ExportEnv): Promise<LatexAssets> {
@@ -146,7 +160,7 @@ export async function buildDocument(
 
 export async function exportNote(env: ExportEnv, file: TFile, wantPdf: boolean): Promise<string> {
 	const reader = obsidianNoteReader(env.app);
-	const rawText = await env.app.vault.read(file);
+	const rawText = await readWithDefaults(env.app, file, env.defaultFrontmatterNote);
 	const assets = await readLatexAssets(env);
 	return buildDocument(env, file, wantPdf, (backend, cwd) =>
 		coreExportNoteToLatex(reader, file, rawText, backend, assets, cwd),
@@ -154,9 +168,9 @@ export async function exportNote(env: ExportEnv, file: TFile, wantPdf: boolean):
 }
 
 /** Exports the note to plain markdown — no pandoc involved (see `lavatex-core`'s `exportNoteToMarkdown`). */
-export async function exportNoteToMarkdown(app: App, file: TFile): Promise<string> {
+export async function exportNoteToMarkdown(app: App, file: TFile, defaultFrontmatterNote: string): Promise<string> {
 	const reader = obsidianNoteReader(app);
-	const rawText = await app.vault.read(file);
+	const rawText = await readWithDefaults(app, file, defaultFrontmatterNote);
 	const markdown = await coreExportNoteToMarkdown(reader, file, rawText);
 
 	const outputPath = normalizePath(

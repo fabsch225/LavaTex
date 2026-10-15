@@ -2,7 +2,7 @@ import { Notice, Platform, Plugin, type TFile, getFrontMatterInfo, parseYaml } f
 
 import { collectLabels, extractInlineMacros, resolveFrontmatterReferences } from "lavatex-core";
 
-import { type ExportEnv, exportNote, exportNoteToMarkdown } from "./export/exporter";
+import { type ExportEnv, exportNote, exportNoteToMarkdown, readWithDefaults } from "./export/exporter";
 import { obsidianNoteReader } from "./export/obsidianNoteReader";
 import { exportProject } from "./export/project";
 import { registerMathMacros } from "./obsidian-math/mathJaxMacros";
@@ -220,9 +220,11 @@ export default class LatexExporterPlugin extends Plugin {
 		const body = await this.app.vault.cachedRead(file);
 		let resolved: string;
 		try {
-			resolved = await resolveFrontmatterReferences(obsidianNoteReader(this.app), file, body);
+			const withDefaults = await readWithDefaults(this.app, file, this.settings.defaultFrontmatterNote);
+			resolved = await resolveFrontmatterReferences(obsidianNoteReader(this.app), file, withDefaults);
 		} catch {
-			// A dangling `macros: "[[...]]"` link while typing — export reports it.
+			// A dangling `macros: "[[...]]"` link while typing, or a missing
+			// default-frontmatter note — export reports either.
 			resolved = body;
 		}
 		const frontmatterInfo = getFrontMatterInfo(resolved);
@@ -258,6 +260,7 @@ export default class LatexExporterPlugin extends Plugin {
 			pluginDir: this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`,
 			remote: remote ? this.remoteToolchain() : undefined,
 			engine: this.settings.latexEngine,
+			defaultFrontmatterNote: this.settings.defaultFrontmatterNote,
 			onProgress: (message) => notice.setMessage(message),
 		};
 	}
@@ -296,7 +299,7 @@ export default class LatexExporterPlugin extends Plugin {
 
 	private async runMarkdownExport(file: TFile): Promise<void> {
 		try {
-			const outputPath = await exportNoteToMarkdown(this.app, file);
+			const outputPath = await exportNoteToMarkdown(this.app, file, this.settings.defaultFrontmatterNote);
 			new Notice(`Exported to ${outputPath.split("/").pop()}`);
 		} catch (err) {
 			console.error(err);
