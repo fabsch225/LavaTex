@@ -1,0 +1,94 @@
+name: Release plugin
+
+# Every push to main that touches the plugin or lavatex-core builds the
+# Obsidian plugin and publishes it as a GitHub release, so a vault can
+# always pull the newest build with latex-exporter/update-lavatex.sh.
+#
+# Version: <major>.<minor> from latex-exporter/manifest.json, patch = the
+# commit count on main — monotonic without anyone bumping it by hand. Bump
+# major/minor in manifest.json for bigger changes. The tag has no "v"
+# prefix, as Obsidian expects; the manifest.json shipped in the release is
+# stamped with that exact version.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "latex-exporter/**"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build and test lavatex-core
+        run: |
+          npm ci
+          npm run build
+          npm test
+
+      - name: Build the plugin
+        working-directory: latex-exporter
+        run: |
+          npm ci
+          npm run build
+
+      - name: Compute version
+        id: version
+        run: |
+          base=$(node -p 'require("./latex-exporter/manifest.json").version.split(".").slice(0, 2).join(".")')
+          version="$base.$(git rev-list --count HEAD)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "$version" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Package
+        if: steps.version.outputs.exists != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p release/latex-exporter
+          cp -R latex-exporter/main.js latex-exporter/pandoc release/latex-exporter/
+          node -e '
+            const fs = require("fs");
+            const manifest = JSON.parse(fs.readFileSync("latex-exporter/manifest.json", "utf8"));
+            manifest.version = process.env.VERSION;
+            fs.writeFileSync("release/latex-exporter/manifest.json", JSON.stringify(manifest, null, "\t") + "\n");
+          '
+          (cd release && zip -qr latex-exporter.zip latex-exporter)
+          cp release/latex-exporter/main.js release/latex-exporter/manifest.json latex-exporter/update-lavatex.sh release/
+
+      - name: Publish release
+        if: steps.version.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "LaTeX Exporter $VERSION" \
+            --generate-notes \
+            release/latex-exporter.zip release/main.js release/manifest.json release/update-lavatex.sh

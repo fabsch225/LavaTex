@@ -46,10 +46,20 @@ Run `lavatex-core`'s own unit tests with `npm test` from the repo root.
 
 ## Install
 
-1. `cd latex-exporter && npm install && npm run build`
-2. Copy `latex-exporter/` (manifest.json, main.js, pandoc/) into
-   `<vault>/.obsidian/plugins/`, then enable it in Obsidian's community
-   plugins list.
+1. Every push to `main` publishes a [GitHub release](https://github.com/fabsch225/LavaTex/releases)
+   of the plugin (`.github/workflows/release.yml`). To install or update
+   it, put [`update-lavatex.sh`](latex-exporter/update-lavatex.sh) (also
+   attached to every release) in your vault's root folder and run
+   `sh update-lavatex.sh` — it downloads the newest release into
+   `.obsidian/plugins/latex-exporter/`, keeping your plugin settings. Then
+   enable (or reload) the plugin in Obsidian's community plugins list.
+
+   From source instead: `cd latex-exporter && npm install && npm run build`,
+   then copy `latex-exporter/` (manifest.json, main.js, pandoc/) into
+   `<vault>/.obsidian/plugins/`.
+2. Release versions are `<major>.<minor>` from `latex-exporter/manifest.json`
+   plus the commit count as patch — bump major/minor there by hand for
+   bigger changes.
 3. Requires `pandoc` and `pandoc-crossref` on `PATH`
    (`brew install pandoc pandoc-crossref`).
 4. "Export current note to PDF" additionally requires a LaTeX engine on
