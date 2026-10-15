@@ -88,6 +88,12 @@ Code, link it into your skills folder:
 ln -s "$PWD/skills/lavatex" ~/.claude/skills/lavatex
 ```
 
+`skills/lavatex-from-pdf/` builds on it: the procedure for converting a
+PDF (exercise sheet, lecture notes) into a note. It reads the math off
+rendered pages, ports images and diagrams, and checks the export against
+the original and the live Obsidian rendering. It never writes solutions.
+Link it the same way.
+
 For claude.ai, zip the `skills/lavatex/` folder and upload it under
 Settings → Capabilities → Skills. The checker needs a local pandoc there,
 so expect only the writing rules to apply.
