@@ -161,6 +161,11 @@ Twelve commands, all in the command palette:
     yet and is left as-is — an honest limitation, not a bug.
   - Frontmatter is trimmed to `title`/`author`/`date`; `preamble`,
     `theorems`, and LaTeX layout knobs have no meaning here.
+- **Clean up** — moves everything the exports left next to the current
+  note to the trash (system trash, else the vault's `.trash`): `.tex`,
+  `.pdf`, `.exported.md` and LaTeX's auxiliary files (`.aux`, `.log`,
+  `.fls`, `.fdb_latexmk`, `.out`, `.toc`, `.synctex.gz`, …). The note
+  itself and anything else in the folder (images) stay.
 - **Insert reference to label** — fuzzy-searches every `{#label}` in the
   current note (theorem headers and labelled equations alike) and inserts
   a `[#label]` shortcut at the cursor.

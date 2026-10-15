@@ -2,6 +2,7 @@ import { Notice, Platform, Plugin, type TFile, getFrontMatterInfo, parseYaml } f
 
 import { collectLabels, extractInlineMacros, resolveFrontmatterReferences } from "lavatex-core";
 
+import { cleanUpExports } from "./export/cleanup";
 import { type ExportEnv, exportNote, exportNoteToMarkdown, readWithDefaults } from "./export/exporter";
 import { obsidianNoteReader } from "./export/obsidianNoteReader";
 import { exportProject } from "./export/project";
@@ -121,6 +122,21 @@ export default class LatexExporterPlugin extends Plugin {
 				}
 				if (!checking) {
 					void this.runMarkdownExport(file);
+				}
+				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "clean-up",
+			name: "Clean up",
+			checkCallback: (checking: boolean) => {
+				const file = this.app.workspace.getActiveFile();
+				if (!file || file.extension !== "md") {
+					return false;
+				}
+				if (!checking) {
+					void this.runCleanUp(file);
 				}
 				return true;
 			},
@@ -295,6 +311,20 @@ export default class LatexExporterPlugin extends Plugin {
 
 	private runProjectPdfExport(file: TFile): Promise<void> {
 		return this.runWithNotice("Project PDF export", (env) => exportProject(env, file, true));
+	}
+
+	private async runCleanUp(file: TFile): Promise<void> {
+		try {
+			const removed = await cleanUpExports(this.app, file);
+			new Notice(
+				removed.length === 0
+					? `Nothing to clean up for ${file.basename}.`
+					: `Moved ${removed.length} file${removed.length === 1 ? "" : "s"} to the trash: ${removed.map((p) => p.split("/").pop()).join(", ")}`,
+			);
+		} catch (err) {
+			console.error(err);
+			new Notice(`Clean up failed: ${err instanceof Error ? err.message : String(err)}`);
+		}
 	}
 
 	private async runMarkdownExport(file: TFile): Promise<void> {
