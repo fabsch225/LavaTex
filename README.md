@@ -501,12 +501,13 @@ Figure: A TikZ diagram, exported as a numbered figure. {#fig:comm}
 A `Figure:` line right after the closing fence — same shape as a
 bold-statement header's `(title) {#label}` — promotes the block to a
 captioned, labelled `figure` environment, numbered and cross-referenceable
-with `[#fig:comm]` like anything else with a `{#label}`. Without a `Figure:`
-line, the `\begin{tikzpicture}...\end{tikzpicture}` is emitted unwrapped,
-for a diagram meant to sit inline rather than as a numbered float.
+with `[#fig:comm]` like anything else with a `{#label}`. Without a `Figure:` line the diagram is centered in the text flow, like
+display math, rather than floated and numbered.
 
-Needs `\usepackage{tikz}` (and any `\usetikzlibrary{...}`) in `preamble:` —
-not added automatically, since not every project uses TikZ.
+No preamble setup is needed. `\usepackage{tikz}`, plus every
+`\usepackage{...}`/`\usetikzlibrary{...}` line written inside a block (the
+way TikZJax wants them, e.g. `\usepackage{tikz-cd}`), is added to the
+exported preamble automatically, after the note's own `preamble:`.
 
 ## Live macros in Obsidian's math mode
 

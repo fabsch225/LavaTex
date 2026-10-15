@@ -184,8 +184,12 @@ one-off environments). A `\newcommand` in a raw block also renders live.
   `Figure: Caption text. {#fig:name}`, makes it a numbered figure. You may
   wrap the picture in `\begin{document}…\end{document}` with
   `\usetikzlibrary{…}` lines first, which TikZJax needs for live preview; the
-  exporter strips that wrapper. The preamble needs `\usepackage{tikz}` and
-  the same libraries.
+  exporter strips that wrapper. Put `\usepackage{tikz-cd}` and
+  `\usetikzlibrary{…}` lines inside the block too: the export adds them, plus
+  `\usepackage{tikz}`, to the preamble automatically. Without a `Figure:`
+  line the diagram is centered in the text.
+- **Numbering:** in a note without `#` headings, theorems and equations
+  number plainly (1, 2, 3) even when `theorems:` says `counter: section`.
 - **Code:** a fence with a language tag (` ```python `) becomes `lstlisting`.
   The preamble needs `listings`; set the language/style once with `\lstset`.
 - **Images:** an Obsidian embed `![[plot.png]]` (resolved anywhere in the

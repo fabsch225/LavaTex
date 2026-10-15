@@ -67,5 +67,33 @@ describe("exportNoteToLatex", () => {
 
 		expect(calls[0].cwd).toBe("/some/dir");
 	});
+
+	it("adds tikz blocks' packages to the preamble, and numbers plainly in a note without headings", async () => {
+		const reader = fakeNoteReader({});
+		const note = { path: "note.md", basename: "note" };
+		const { backend, calls } = captureBackend();
+		const raw =
+			"---\npreamble: \\usepackage{amsmath}\ntheorems:\n  - {id: theorem, name: Theorem, counter: section}\n  - {id: lemma, name: Lemma, like: theorem}\n---\n" +
+			"**Theorem**\nText.\n∎\n\n```tikz\n\\usepackage{tikz-cd}\n\\begin{document}\n\\begin{tikzcd} A \\end{tikzcd}\n\\end{document}\n```\n";
+
+		await exportNoteToLatex(reader, note, raw, backend, ASSETS);
+
+		expect(calls[0].headerIncludes).toBe("\\usepackage{amsmath}\n\\usepackage{tikz}\n\\usepackage{tikz-cd}");
+		expect(calls[0].markdown).toContain("nosections: true");
+		expect(calls[0].markdown).not.toContain("counter: section");
+		expect(calls[0].markdown).toContain("like: theorem");
+	});
+
+	it("keeps section numbering when the note has headings", async () => {
+		const reader = fakeNoteReader({});
+		const note = { path: "note.md", basename: "note" };
+		const { backend, calls } = captureBackend();
+		const raw = "---\ntheorems:\n  - {id: theorem, name: Theorem, counter: section}\n---\n# Intro\n\n**Theorem**\nText.\n∎\n";
+
+		await exportNoteToLatex(reader, note, raw, backend, ASSETS);
+
+		expect(calls[0].markdown).toContain("counter: section");
+		expect(calls[0].markdown).not.toContain("nosections");
+	});
 });
 

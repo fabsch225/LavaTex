@@ -87,6 +87,10 @@ theorems:
   "Theorem-like blocks" below. It does not have to match `id`; you write
   `**Theorem**` even though the environment is internally `theorem`, and
   `**Definition und Lemma**` for an id like `deflemma`.
+- An entry with neither `counter` nor `like` gets its own plain counter
+  (1, 2, 3). In a single note without any `#` headings, `counter: section`
+  is dropped the same way, and equations aren't numbered within sections,
+  so the numbering isn't "0.1", "0.2", ….
 - `proof` is always available as an environment without being listed here —
   its trigger word is whatever `proofname` is set to (or "Proof" if unset).
 
@@ -220,12 +224,13 @@ Figure: A TikZ diagram, exported as a numbered figure. {#fig:comm}
 A `Figure:` line right after the closing fence — same shape as a
 bold-statement header's `(title) {#label}` — promotes the block to a
 captioned, labelled `figure` environment, numbered and cross-referenceable
-with `[#fig:comm]` like anything else with a `{#label}`. Without a `Figure:`
-line, the `\begin{tikzpicture}...\end{tikzpicture}` is emitted unwrapped, for
-a diagram meant to sit inline rather than as a numbered float.
+with `[#fig:comm]` like anything else with a `{#label}`. Without a `Figure:` line the diagram is centered in the text flow, like
+display math, rather than floated and numbered.
 
-Needs `\usepackage{tikz}` (and any `\usetikzlibrary{...}`) in `preamble:` —
-not added automatically, since not every project uses TikZ.
+No preamble setup is needed. `\usepackage{tikz}`, plus every
+`\usepackage{...}`/`\usetikzlibrary{...}` line written inside a block (the
+way TikZJax wants them, e.g. `\usepackage{tikz-cd}`), is added to the
+exported preamble automatically, after the note's own `preamble:`.
 
 ## Code listings
 

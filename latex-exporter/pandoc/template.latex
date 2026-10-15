@@ -52,7 +52,12 @@ $endfor$
 
 % \counterwithin is LaTeX's built-in version of amsmath's \numberwithin, so
 % a note without any preamble (no amsmath) still compiles.
-\counterwithin{equation}{$if(numberwithin)$$numberwithin$$else$section$endif$}
+$if(numberwithin)$
+\counterwithin{equation}{$numberwithin$}
+$elseif(nosections)$
+$else$
+\counterwithin{equation}{section}
+$endif$
 
 $if(refname)$
 % \refname is what `thebibliography` looks up under article; \bibname is

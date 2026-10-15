@@ -30,13 +30,11 @@
  *
  * That wrapper is meaningless (and invalid) spliced into the middle of the
  * exported document's own body, so it's stripped before the block becomes a
- * raw block — leaving just `\begin{tikzcd}...\end{tikzcd}`. The `\usepackage`
- * and `\usetikzlibrary` lines are *not* carried over automatically: the same
- * package/library needs to also be declared in the note's own `preamble:`,
- * exactly like plain `\usepackage{tikz}` already does, so one block works
- * both live in the editor (via TikZJax) and in the exported document (via
- * the real LaTeX preamble) without silently depending on this pass to wire
- * the two together.
+ * raw block — leaving just `\begin{tikzcd}...\end{tikzcd}`. Its
+ * `\usepackage`/`\usetikzlibrary` lines are carried over into the exported
+ * document's preamble instead (`collectTikzPreamble`), together with
+ * `\usepackage{tikz}` itself, so a block that renders live in the editor
+ * also compiles without repeating its packages in the note's `preamble:`.
  *
  * TikZJax's README wraps `\begin{document}...\end{document}` around every
  * example, plain `tikzpicture` included — the wrapper isn't specific to
@@ -80,11 +78,39 @@ function stripTikzjaxWrapper(body: string): string {
 	return text;
 }
 
+const PREAMBLE_LINE_GLOBAL = /^[ \t]*(\\(?:usepackage|usetikzlibrary)(?:\[[^\]]*\])?\{[^}]*\})[ \t]*$/gm;
+
+/**
+ * The preamble lines every ` ```tikz ` block in `text` needs: `\usepackage{tikz}`
+ * plus each block's own `\usepackage{...}`/`\usetikzlibrary{...}` lines,
+ * deduplicated, in first-seen order. Appended after the note's own
+ * preamble, where a package it already loaded is a harmless no-op.
+ */
+export function collectTikzPreamble(text: string): string[] {
+	const lines: string[] = [];
+	for (const block of text.matchAll(TIKZ_BLOCK)) {
+		if (lines.length === 0) lines.push("\\usepackage{tikz}");
+		for (const line of block[1].matchAll(PREAMBLE_LINE_GLOBAL)) {
+			if (!lines.includes(line[1])) lines.push(line[1]);
+		}
+	}
+	return lines;
+}
+
+/** Appends `collectTikzPreamble(body)` to a frontmatter's `preamble:` value. */
+export function withTikzPreamble(frontmatter: Record<string, unknown>, body: string): void {
+	const extra = collectTikzPreamble(body);
+	if (extra.length === 0) return;
+	const own = typeof frontmatter["preamble"] === "string" ? (frontmatter["preamble"] as string).trim() : "";
+	frontmatter["preamble"] = [own, ...extra].filter(Boolean).join("\n");
+}
+
 export function convertTikzBlocksToRaw(text: string): string {
 	return text.replace(TIKZ_BLOCK, (_match, rawBody: string, figureLine?: string) => {
 		const body = stripTikzjaxWrapper(rawBody);
 		if (!figureLine) {
-			return "```{=latex}\n" + body + "\n```";
+			// Centered like display math; `Figure:` makes it a numbered float instead.
+			return "```{=latex}\n\\begin{center}\n" + body + "\n\\end{center}\n```";
 		}
 
 		let rest = figureLine.trim();

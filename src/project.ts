@@ -30,6 +30,7 @@ import type { NoteRef, NoteReader } from "./notes";
 import type { PandocBackend } from "./pandoc/types";
 import { extractRawLatexFrontmatter } from "./rawLatexFrontmatter";
 import { collectEnvironmentTriggers } from "./latex/theoremEnvironments";
+import { withTikzPreamble } from "./latex/tikzBlocks";
 
 const WIKILINK = /^\[\[([^\]|]+)(?:\|[^\]]*)?\]\]$/;
 
@@ -114,6 +115,7 @@ export async function exportProjectToLatex(
 	if (!("toc" in frontmatter)) {
 		frontmatter["toc"] = true;
 	}
+	withTikzPreamble(frontmatter, [masterBody, ...texts].join("\n\n"));
 	const division = frontmatter["division"];
 	delete frontmatter["chapters"];
 	delete frontmatter["appendix-from"];

@@ -160,7 +160,8 @@ environments). Watch for:
   ````
   `tikz-cd` is shorter, but only use it after `obsidian_render_check.sh`
   confirms TikZJax renders it in this vault. The PDF side then needs
-  `\usepackage{tikz-cd}` in the preamble. Drop the `Figure:` line for a
+  `\usepackage{tikz-cd}` inside the block, and the export adds it to the
+  preamble. Drop the `Figure:` line for a
   diagram that sits in the flow of text rather than as a numbered figure.
 - **Test every diagram both ways** (step 4). A diagram that compiles can
   still fail to render live, and the other way round.
