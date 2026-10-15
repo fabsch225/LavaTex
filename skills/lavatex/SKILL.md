@@ -51,7 +51,9 @@ toc: true                       # optional on single notes
 ```
 
 - `preamble`, `theorems`, `macros` and `bibliography-raw` each take either a
-  literal value or a `"[[Wikilink]]"` (quoted) to a note holding it.
+  literal value or a `"[[Wikilink]]"` (quoted) to a note holding it — or
+  several as a YAML list of quoted links, joined in
+  order (first declaration of a theorem `id` wins).
 - **The preamble must load `amsmath` (or `mathtools`) and `amsthm`.** The
   template always calls `\numberwithin{equation}{section}` and uses amsthm
   environments. Add `tikz` (+ `\usetikzlibrary`) for diagrams, `listings`

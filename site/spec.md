@@ -40,6 +40,23 @@ it has any); for `theorems` it's the linked note's own `theorems:`
 frontmatter field, so that file's shape is identical to writing the list
 inline, just in its own note.
 
+Several sources compose as a YAML list (what Obsidian's properties editor
+writes for a list property), which may also mix in inline values:
+
+```yaml
+preamble:
+  - "[[preamble]]"
+  - \usepackage{tikz-cd}
+theorems:
+  - "[[theorems]]"
+  - "[[problem-theorems]]"
+```
+
+Text fields are joined in the order listed; `theorems` lists are
+concatenated (a linked theorems note may itself link further notes), and
+if two sources declare the same `id` the first one wins. A link that
+doesn't resolve is an export error.
+
 ### `theorems`
 
 A list of environments to declare, each either:

@@ -264,6 +264,23 @@ note's own `theorems:` frontmatter field. See `examples/Util/preamble.md`,
 `examples/Util/macros.md`, `examples/Util/theorems.md`, referenced from
 `examples/weierstrass.md`.
 
+Several sources compose as a YAML list (what Obsidian's properties editor
+writes for a list property), which may also mix in inline values:
+
+```yaml
+preamble:
+  - "[[preamble]]"
+  - \usepackage{tikz-cd}
+theorems:
+  - "[[theorems]]"
+  - "[[problem-theorems]]"
+```
+
+Text fields are joined in the order listed; `theorems` lists are
+concatenated (a linked theorems note may itself link further notes), and
+if two sources declare the same `id` the first one wins. A link that
+doesn't resolve is an export error.
+
 ### Citations
 
 Each bibliography source is its own note — `key` (the `\cite{}` argument)

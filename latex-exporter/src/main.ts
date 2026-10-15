@@ -218,7 +218,13 @@ export default class LatexExporterPlugin extends Plugin {
 
 	private async refreshMathMacros(file: TFile): Promise<void> {
 		const body = await this.app.vault.cachedRead(file);
-		const resolved = await resolveFrontmatterReferences(obsidianNoteReader(this.app), file, body);
+		let resolved: string;
+		try {
+			resolved = await resolveFrontmatterReferences(obsidianNoteReader(this.app), file, body);
+		} catch {
+			// A dangling `macros: "[[...]]"` link while typing — export reports it.
+			resolved = body;
+		}
 		const frontmatterInfo = getFrontMatterInfo(resolved);
 		const frontmatterMacros = frontmatterInfo.exists
 			? (parseYaml(frontmatterInfo.frontmatter) as Record<string, unknown>)["macros"]

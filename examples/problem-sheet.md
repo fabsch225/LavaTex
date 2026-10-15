@@ -5,12 +5,12 @@ date: \today
 fontsize: 12pt
 margin: 1in
 proofname: Proof
-preamble: |
-  \usepackage{amsmath, amssymb, amsthm}
+preamble: "[[preamble]]"
 theorems:
-  - {id: task, name: Task, counter: section}
-  - {id: note, name: Note, like: task}
+  - "[[theorems]]"
+  - "[[problem-theorems]]"
 ---
+
 # Task 1
 ## a)
 In euclidian geometry, a line intersects a plane exactly once, if they are'nt parallel. Since the $z$-coordinate of $x$ is below that of $N$, this is the case
@@ -50,5 +50,6 @@ Want to show: $f \circ \psi$ is holomorphic.
 Consider $q \in U$ and a chart $\varphi \in \mathcal A$ such that $\varphi : V \to \mathbb C$ with $q \in V$. Then
 $$f \circ \psi^{-1} |_{U \cap V} = (f \circ \varphi ^{-1}) \circ (\varphi  \circ \psi^{-1})|_{U \cap V}$$
 is holomorphic as the composition of
+
 - $(f \circ \varphi ^{-1})$ holomorphic by assumption
 - $(\varphi  \circ \psi^{-1})$ holomorphic since all charts in $\mathcal A^*$ and $\mathcal A$ are compatible
