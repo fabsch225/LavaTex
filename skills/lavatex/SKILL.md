@@ -54,9 +54,8 @@ toc: true                       # optional on single notes
   literal value or a `"[[Wikilink]]"` (quoted) to a note holding it — or
   several as a YAML list of quoted links, joined in
   order (first declaration of a theorem `id` wins).
-- **The preamble must load `amsmath` (or `mathtools`) and `amsthm`.** The
-  template always calls `\numberwithin{equation}{section}` and uses amsthm
-  environments. Add `tikz` (+ `\usetikzlibrary`) for diagrams, `listings`
+- **The preamble should load `amsmath` (or `mathtools`) and `amsthm`**:
+  display math, `align` and proofs need them. Add `tikz` (+ `\usetikzlibrary`) for diagrams, `listings`
   for code, `hyperref` for clickable references, `babel` for non-English text.
 - Leave `bibliography-raw` unset; citations fill it automatically.
 
@@ -65,6 +64,7 @@ toc: true                       # optional on single notes
 ```yaml
 theorems:
   - {id: theorem, name: Theorem, counter: section}   # own counter, numbered within sections
+  - {id: exercise, name: Exercise}                    # own plain counter 1, 2, 3 (exercise sheets)
   - {id: lemma, name: Lemma, like: theorem}           # shares theorem's counter
   - {id: definition, name: Definition, like: theorem}
   - {id: deflemma, name: "Definition und Lemma", like: theorem}

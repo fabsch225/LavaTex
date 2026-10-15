@@ -43,12 +43,16 @@ $header-includes$
 $for(theorems)$
 $if(theorems.counter)$
 \newtheorem{$theorems.id$}{$theorems.name$}[$theorems.counter$]
-$else$
+$elseif(theorems.like)$
 \newtheorem{$theorems.id$}[$theorems.like$]{$theorems.name$}
+$else$
+\newtheorem{$theorems.id$}{$theorems.name$}
 $endif$
 $endfor$
 
-\numberwithin{equation}{$if(numberwithin)$$numberwithin$$else$section$endif$}
+% \counterwithin is LaTeX's built-in version of amsmath's \numberwithin, so
+% a note without any preamble (no amsmath) still compiles.
+\counterwithin{equation}{$if(numberwithin)$$numberwithin$$else$section$endif$}
 
 $if(refname)$
 % \refname is what `thebibliography` looks up under article; \bibname is

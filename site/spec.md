@@ -7,7 +7,8 @@ that *is* configurable lives in one place: the note's YAML frontmatter.
 ## Preamble
 
 Equations are always numbered per section
-(`\numberwithin{equation}{section}`); everything else about the preamble —
+(`\counterwithin{equation}{section}`, which needs no package, so a note
+with no preamble at all still compiles); everything else about the preamble —
 the package list included — comes from the note's `preamble` frontmatter
 field, not a hardcoded list in `template.latex`.
 
@@ -71,12 +72,13 @@ normal note, so it can double as an Obsidian template for new notes. See
 
 ### `theorems`
 
-A list of environments to declare, each either:
+A list of environments to declare, each one of:
 
 ```yaml
 theorems:
   - {id: theorem, name: Theorem, counter: section}   # gets its own counter, numbered within section
   - {id: lemma, name: Lemma, like: theorem}           # shares the "theorem" counter
+  - {id: exercise, name: Exercise}                    # own plain counter: 1, 2, 3, ...
 ```
 
 - `id` becomes the LaTeX environment name (`\newtheorem{id}...`, and what
