@@ -183,6 +183,24 @@ callouts (`> >`) nest environments. A callout whose type isn't a declared
 environment (`> [!info]`) is exported as an ordinary blockquote with a bold
 title. See `examples/problem-sheet.md`.
 
+## Images
+
+Obsidian image embeds export as figures, so images pasted into a note in
+Obsidian just work:
+
+| Note | LaTeX |
+|---|---|
+| `![[plot.png]]` | `\includegraphics{../attachments/plot.png}` |
+| `![[plot.png\|300]]` | 300px wide (`300x200` sets the height too) |
+| `![[plot.png\|A caption]]` | a figure captioned "A caption" |
+
+The file is found the way Obsidian finds it — by name, anywhere in the
+vault — and written as a path relative to the folder LaTeX compiles in (the
+note's, or a project's master note's). PNG, JPG and PDF work with every
+engine. Standard Markdown images (`![Caption](figures/plot.png)`, relative
+to the note) work too. Embeds of other notes (`![[Note]]`) are not
+exported.
+
 ## TikZ diagrams
 
 A ` ```tikz ``` ` fenced block — the same plain syntax the community

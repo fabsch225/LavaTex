@@ -78,41 +78,78 @@ async function openPdf(app: App, pdf: TFile): Promise<void> {
 	}
 }
 
-const IMAGE_REFS = [/!\[[^\]]*\]\(\s*<?([^)\s>]+)/g, /\\includegraphics\s*(?:\[[^\]]*\])?\s*\{([^}]+)\}/g];
+// `![alt](<path with spaces.png>)` or `![alt](path.png)`; `\includegraphics[...]{path}`.
+const IMAGE_REFS = [/!\[[^\]]*\]\(\s*(?:<([^>]+)>|([^)\s]+))/g, /\\includegraphics\s*(?:\[[^\]]*\])?\s*\{([^}]+)\}/g];
 const GRAPHICS_EXTENSIONS = [".pdf", ".png", ".jpg", ".jpeg"];
+
+/** Resolves `ref` against vault folder `folder`; undefined if it climbs out of the vault. */
+function resolveInVault(folder: string, ref: string): string | undefined {
+	const parts: string[] = folder === "/" ? [] : folder.split("/").filter(Boolean);
+	for (const part of ref.split("/")) {
+		if (part === "" || part === ".") continue;
+		if (part === "..") {
+			if (parts.length === 0) return undefined;
+			parts.pop();
+		} else {
+			parts.push(part);
+		}
+	}
+	return normalizePath(parts.join("/"));
+}
+
+/** Where an image outside the compile folder (an `../attachments/x.png` embed) is uploaded instead. */
+const OUTSIDE_FOLDER_PREFIX = "_vault/";
 
 /**
  * The images a remote compile needs uploaded alongside the .tex: every
  * relative path referenced from the markdown, resolved against `folder`
- * (the same directory the local toolchain would run latexmk in).
+ * (the same directory the local toolchain would run latexmk in). The
+ * remote work directory only holds paths below it, so a `../`-path (an
+ * image elsewhere in the vault, e.g. an Obsidian attachments folder) is
+ * uploaded under `_vault/<vault path>` and rewritten to that in the
+ * returned markdown.
  */
-async function collectResources(app: App, folder: string, markdown: string): Promise<Record<string, ArrayBuffer>> {
+async function collectResources(
+	app: App,
+	folder: string,
+	markdown: string,
+): Promise<{ files: Record<string, ArrayBuffer>; markdown: string }> {
 	const refs = new Set<string>();
 	for (const pattern of IMAGE_REFS) {
-		for (const match of markdown.matchAll(pattern)) refs.add(match[1].trim());
+		for (const match of markdown.matchAll(pattern)) refs.add((match[1] ?? match[2]).trim());
 	}
 
 	const files: Record<string, ArrayBuffer> = {};
+	const renames = new Map<string, string>();
 	for (const ref of refs) {
-		if (/^[a-z][a-z0-9+.-]*:/i.test(ref) || ref.startsWith("/") || ref.split("/").includes("..")) continue;
+		if (/^[a-z][a-z0-9+.-]*:/i.test(ref) || ref.startsWith("/")) continue;
 		let decoded = ref;
 		try {
 			decoded = decodeURI(ref);
 		} catch {
 			// keep as-is
 		}
-		const base = normalizePath(folder === "/" ? decoded : `${folder}/${decoded}`);
+		const base = resolveInVault(folder, decoded);
+		if (base === undefined) continue;
+		const outside = decoded.split("/").includes("..");
 		const hasExtension = /\.[a-z0-9]+$/i.test(decoded);
 		const candidates = hasExtension ? [base] : GRAPHICS_EXTENSIONS.map((ext) => base + ext);
 		for (const candidate of candidates) {
 			if (await app.vault.adapter.exists(candidate)) {
-				const key = hasExtension ? ref : ref + candidate.slice(base.length);
+				const extension = hasExtension ? "" : candidate.slice(base.length);
+				const key = outside ? OUTSIDE_FOLDER_PREFIX + candidate : ref + extension;
+				if (outside) renames.set(ref, OUTSIDE_FOLDER_PREFIX + base);
 				files[key] = await app.vault.adapter.readBinary(candidate);
 				break;
 			}
 		}
 	}
-	return files;
+
+	let rewritten = markdown;
+	for (const [from, to] of renames) {
+		rewritten = rewritten.split(`<${from}>`).join(`<${to}>`).split(`(${from})`).join(`(${to})`).split(`{${from}}`).join(`{${to}}`);
+	}
+	return { files, markdown: rewritten };
 }
 
 /**
@@ -145,7 +182,14 @@ export async function buildDocument(
 	const remoteBackend: PandocBackend = {
 		async convert(input) {
 			const { cwd: _cwd, ...pandoc } = input;
-			const files = wantPdf ? await collectResources(app, folder, input.markdown + (input.headerIncludes ?? "")) : {};
+			let files: Record<string, ArrayBuffer> = {};
+			if (wantPdf) {
+				const resources = await collectResources(app, folder, pandoc.markdown);
+				const headerResources = await collectResources(app, folder, pandoc.headerIncludes ?? "");
+				files = { ...resources.files, ...headerResources.files };
+				pandoc.markdown = resources.markdown;
+				if (pandoc.headerIncludes) pandoc.headerIncludes = headerResources.markdown;
+			}
 			result = await remote.run({ pandoc, compile: wantPdf, engine: env.engine, files }, env.onProgress);
 			return result.tex;
 		},

@@ -7,6 +7,7 @@ import { expandCitations } from "./citations";
 import { resolveFrontmatterReferences } from "./frontmatterRefs";
 import { convertCallouts } from "./latex/calloutBlocks";
 import { convertCodeBlocksToRaw } from "./latex/codeBlocks";
+import { convertImageEmbeds, folderOf } from "./latex/imageEmbeds";
 import { convertAlignBlocksToRaw } from "./latex/rawEnvironments";
 import { expandReferenceShortcuts } from "./latex/referenceShortcuts";
 import { preprocessTheoremBlocks } from "./latex/theoremBlockPreprocessor";
@@ -28,7 +29,9 @@ export async function preprocessNoteForLatex(reader: NoteReader, note: NoteRef, 
 	// completely different thing from a wikilink written in prose, and
 	// stripping it there would silently break the former.
 	const frontmatterBlock = frontmatterInfo.exists ? raw.slice(0, frontmatterInfo.contentStart) : "";
-	const body = stripWikilinks(frontmatterInfo.exists ? raw.slice(frontmatterInfo.contentStart) : raw);
+	const body = stripWikilinks(
+		convertImageEmbeds(frontmatterInfo.exists ? raw.slice(frontmatterInfo.contentStart) : raw, reader, note, folderOf(note.path)),
+	);
 
 	return expandReferenceShortcuts(
 		preprocessTheoremBlocks(

@@ -97,7 +97,8 @@ const notes = [];
 		if (name.startsWith(".")) continue;
 		const full = path.join(dir, name);
 		if (statSync(full).isDirectory()) walk(full);
-		else if (name.endsWith(".md")) notes.push(path.relative(vault, full).split(path.sep).join("/"));
+		// Every file, not just notes: `![[image.png]]` embeds resolve the same way.
+		else notes.push(path.relative(vault, full).split(path.sep).join("/"));
 	}
 })(vault);
 const ref = (p) => ({ path: p, basename: path.posix.basename(p, ".md") });

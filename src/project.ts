@@ -24,6 +24,7 @@ import { getFrontmatterInfo, parseFrontmatter, stringifyFrontmatter } from "./fr
 import { expandCitationsAcrossFiles } from "./citations";
 import { readNote, resolveFrontmatterReferences, resolveLinkpath } from "./frontmatterRefs";
 import { preprocessChapterBody } from "./latexPreprocess";
+import { convertImageEmbeds, folderOf } from "./latex/imageEmbeds";
 import type { LatexAssets } from "./latexExport";
 import type { NoteRef, NoteReader } from "./notes";
 import type { PandocBackend } from "./pandoc/types";
@@ -85,17 +86,20 @@ export async function exportProjectToLatex(
 
 	const triggers = collectEnvironmentTriggers(frontmatter);
 
+	// LaTeX compiles in the master's folder, so every chapter's image
+	// embeds are made relative to that, not to the chapter's own folder.
+	const outputDir = folderOf(master.path);
 	const parts: string[] = [];
 	const masterBody = masterRaw.slice(info.contentStart).trim();
 	if (masterBody) {
-		parts.push(preprocessChapterBody(masterBody, triggers));
+		parts.push(preprocessChapterBody(convertImageEmbeds(masterBody, reader, master, outputDir), triggers));
 	}
 
 	chapters.forEach((chapter, i) => {
 		if (appendixNote && chapter.note.path === appendixNote.path) {
 			parts.push("```{=latex}\n\\appendix\n```");
 		}
-		parts.push(preprocessChapterBody(texts[i], triggers));
+		parts.push(preprocessChapterBody(convertImageEmbeds(texts[i], reader, chapter.note, outputDir), triggers));
 	});
 
 	if (bibliographyRaw) {

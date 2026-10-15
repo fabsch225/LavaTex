@@ -188,8 +188,11 @@ one-off environments). A `\newcommand` in a raw block also renders live.
   the same libraries.
 - **Code:** a fence with a language tag (` ```python `) becomes `lstlisting`.
   The preamble needs `listings`; set the language/style once with `\lstset`.
-- **Images:** standard Markdown with a path relative to the note,
-  `![Caption](figures/plot.png)`. Obsidian `![[embeds]]` are **not** exported.
+- **Images:** an Obsidian embed `![[plot.png]]` (resolved anywhere in the
+  vault, like Obsidian does), `![[plot.png|300]]` for 300px width,
+  `![[plot.png|A caption]]` for a captioned figure — or standard Markdown
+  with a path relative to the note, `![Caption](figures/plot.png)`.
+  Embeds of other notes (`![[Note]]`) are not exported.
 - **Lists/tables:** normal Markdown lists and pipe tables work. Don't write
   bare `\item`.
 
@@ -258,5 +261,5 @@ the LavaTex repo this skill lives in.
 - [ ] Theorem labels use hyphens; equation labels `eq:`, figure labels `fig:`
 - [ ] Every `[#…]`/`[@…]` has a matching `{#…}`
 - [ ] Citations are `&[[Source]]` to notes that have `key` + `bibitem`
-- [ ] Callout types (if any) are declared environments; no hand-written `\label`/`\ref`/`\cite`, no `![[embeds]]`
+- [ ] Callout types (if any) are declared environments; no hand-written `\label`/`\ref`/`\cite`, no `![[Note]]` embeds (image embeds are fine)
 - [ ] Checker passes, or you said why it couldn't run

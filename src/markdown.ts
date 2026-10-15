@@ -13,6 +13,8 @@
  *   `markdownCitations.ts`).
  * - The `∎` block terminator and `` `...`{=latex} `` wrapper syntax are
  *   stripped — meaningless outside this project's own pipeline.
+ * - `![[image.png]]` embeds become standard `![](path)` images, the path
+ *   resolved the way Obsidian does and made relative to the note's folder.
  * - Plain `[[wikilinks]]` (not `&[[citations]]`) become their display text —
  *   a knowledge-graph link between notes has no meaning to a standalone
  *   file.
@@ -38,6 +40,7 @@
  */
 import { getFrontmatterInfo, parseFrontmatter, stringifyFrontmatter } from "./frontmatter";
 import { convertCallouts } from "./latex/calloutBlocks";
+import { convertImageEmbeds, folderOf } from "./latex/imageEmbeds";
 import { expandMacros, parseMacros } from "./latex/macroExpansion";
 import { collapseBlankLines, stripEnvironmentEndMarks, unwrapRawLatexSpans } from "./latex/markdownNormalizer";
 import { type TheoremSpec, resolveNumbering } from "./latex/markdownNumbering";
@@ -68,7 +71,9 @@ export async function exportNoteToMarkdown(reader: NoteReader, note: NoteRef, ra
 		}
 	}
 
-	let restBody = stripWikilinks((info.exists ? body.slice(info.contentStart) : body).trim());
+	let restBody = stripWikilinks(
+		convertImageEmbeds((info.exists ? body.slice(info.contentStart) : body).trim(), reader, note, folderOf(note.path)),
+	);
 	// Callouts become bold-statement blocks so they're numbered like any
 	// other theorem-like block; their `∎` is stripped again right after.
 	restBody = collapseBlankLines(stripEnvironmentEndMarks(convertCallouts(restBody, collectEnvironmentTriggers(frontmatter))));
