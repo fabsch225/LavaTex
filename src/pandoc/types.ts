@@ -12,8 +12,21 @@
  *   out to, which has no WASM equivalent).
  */
 
+/**
+ * The markdown flavor every pandoc call reads notes as.
+ *
+ * - `-latex_macros`: pandoc's reader otherwise pre-expands any \newcommand
+ *   it sees (including ones from `macros:`) inside math, before the LaTeX
+ *   writer ever runs. Disabling this keeps macro calls literal, so the
+ *   emitted .tex's own \newcommand does the expansion instead.
+ * - `+lists_without_preceding_blankline`: Obsidian starts a list right
+ *   after a paragraph line; pandoc's markdown otherwise needs a blank line
+ *   first and folds the items into the paragraph as literal "- " text.
+ */
+export const PANDOC_MARKDOWN_FORMAT = "markdown-latex_macros+lists_without_preceding_blankline";
+
 export interface PandocInput {
-	/** Preprocessed markdown, ready for pandoc's `markdown-latex_macros` reader. */
+	/** Preprocessed markdown, ready for pandoc's `PANDOC_MARKDOWN_FORMAT` reader. */
 	markdown: string;
 	/** Contents of the LaTeX template (`--template`). */
 	template: string;

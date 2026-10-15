@@ -12,7 +12,7 @@
  * "lavatex-core/wasm"`) rather than a cost every consumer pays, including
  * ones that only ever use `exportNoteToMarkdown` or the native backend.
  */
-import type { PandocBackend, PandocInput } from "./types";
+import { PANDOC_MARKDOWN_FORMAT, type PandocBackend, type PandocInput } from "./types";
 
 async function loadPandocWasm(): Promise<typeof import("pandoc-wasm")> {
 	try {
@@ -34,7 +34,7 @@ export function wasmPandocBackend(): PandocBackend {
 				"filter.lua": input.luaFilter,
 			};
 			const options: Record<string, unknown> = {
-				from: "markdown-latex_macros",
+				from: PANDOC_MARKDOWN_FORMAT,
 				to: "latex",
 				template: "template.latex",
 				"lua-filter": "filter.lua",

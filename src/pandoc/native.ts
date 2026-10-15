@@ -7,7 +7,7 @@
  */
 import { nodeRequire } from "../nodeRequire";
 import { envWithExtraPath } from "../pathEnv";
-import type { PandocBackend, PandocInput } from "./types";
+import { PANDOC_MARKDOWN_FORMAT, type PandocBackend, type PandocInput } from "./types";
 
 async function writeTemp(tag: string, ext: string, content: string): Promise<string> {
 	const fs = nodeRequire<typeof import("fs/promises")>("fs/promises");
@@ -79,11 +79,7 @@ export function nativePandocBackend(): PandocBackend {
 
 				const args = [
 					inputPath,
-					// Pandoc's markdown reader otherwise pre-expands any \newcommand
-					// it sees (including ones from `macros:`) inside math, before the
-					// LaTeX writer ever runs. Disabling this keeps macro calls literal,
-					// so the emitted .tex's own \newcommand does the expansion instead.
-					"--from=markdown-latex_macros",
+					`--from=${PANDOC_MARKDOWN_FORMAT}`,
 					"--template",
 					templatePath,
 					"--lua-filter",

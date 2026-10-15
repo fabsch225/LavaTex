@@ -46,7 +46,7 @@ describe("nativePandocBackend", () => {
 		expect(spawnMock).toHaveBeenCalledTimes(1);
 		const [cmd, args] = spawnMock.mock.calls[0] as [string, string[]];
 		expect(cmd).toBe("pandoc");
-		expect(args).toContain("--from=markdown-latex_macros");
+		expect(args).toContain("--from=markdown-latex_macros+lists_without_preceding_blankline");
 		expect(args).toContain("--filter");
 		expect(args).toContain("pandoc-crossref");
 		expect(args.some((a) => a.startsWith("--include-in-header="))).toBe(true);

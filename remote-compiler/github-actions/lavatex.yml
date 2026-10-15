@@ -81,7 +81,7 @@ jobs:
           put(".lavatex/template.latex", p.template);
           put(".lavatex/filter.lua", p.luaFilter);
           const args = [
-            ".lavatex/input.md", "--from=markdown-latex_macros",
+            ".lavatex/input.md", "--from=markdown-latex_macros+lists_without_preceding_blankline",
             "--template", ".lavatex/template.latex",
             "--lua-filter", ".lavatex/filter.lua",
             "--filter", "pandoc-crossref",

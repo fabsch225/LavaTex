@@ -148,7 +148,7 @@ async function convert(body) {
 		await writeFile(path.join(dir, "filter.lua"), luaFilter);
 		const args = [
 			"input.md",
-			"--from=markdown-latex_macros",
+			"--from=markdown-latex_macros+lists_without_preceding_blankline",
 			"--template",
 			"template.latex",
 			"--lua-filter",

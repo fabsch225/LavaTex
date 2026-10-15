@@ -29,7 +29,7 @@ describe("wasmPandocBackend", () => {
 		expect(result).toBe("%% wasm latex output");
 		expect(convertMock).toHaveBeenCalledTimes(1);
 		const [options, stdin, files] = convertMock.mock.calls[0] as [Record<string, unknown>, string, Record<string, string>];
-		expect(options.from).toBe("markdown-latex_macros");
+		expect(options.from).toBe("markdown-latex_macros+lists_without_preceding_blankline");
 		expect(options.to).toBe("latex");
 		expect(options.template).toBe("template.latex");
 		expect(options["lua-filter"]).toBe("filter.lua");

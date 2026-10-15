@@ -27,7 +27,7 @@ end
 -- all. Round-tripping through pandoc.read/write resolves it the same way
 -- normal body text would.
 function renderTitle(title)
-	local doc = pandoc.read(title, "markdown-latex_macros")
+	local doc = pandoc.read(title, "markdown-latex_macros+lists_without_preceding_blankline")
 	return pandoc.write(doc, "latex"):gsub("%s+$", "")
 end
 
