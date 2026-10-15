@@ -33,7 +33,7 @@ $$
 $$
 Consider
 $$|\pi(x)|^2 = \frac{x_1^2 + x_2^2}{(x_3-1)^2} = \frac{1 - x_3^2}{(x_3-1)^2}= \frac{1+x_3}{1-x_3}$$
-which goes to $\infty$ as $x_3 \to 1$, which is implied by $x \to N$.
+^which goes to $\infty$ as $x_3 \to 1$, which is implied by $x \to N$.
 
 # Task 2
 
@@ -53,3 +53,10 @@ is holomorphic as the composition of
 
 - $(f \circ \varphi ^{-1})$ holomorphic by assumption
 - $(\varphi  \circ \psi^{-1})$ holomorphic since all charts in $\mathcal A^*$ and $\mathcal A$ are compatible
+
+# Task 3 Mock
+
+
+> [!task] Problem Statement
+> ![[Pasted image 20261015164704.png]]
+
