@@ -57,12 +57,17 @@ export function preprocessTheoremBlocks(text: string, triggers: ReadonlyMap<stri
 			const attrs = [`.${header.id}`, header.title && `title="${escapeAttr(header.title)}"`, header.label && `#${header.label}`]
 				.filter(Boolean)
 				.join(" ");
+			// A fence only opens a div at the start of a block: right after a
+			// text line (e.g. a `$$…$$` line) pandoc would read it as more of
+			// that paragraph, so make sure a blank line precedes it.
+			separateFromPrevious(out);
 			out.push(`${":".repeat(fenceLength)} {${attrs}}`);
 			if (header.rest) out.push(header.rest);
 			continue;
 		}
 
 		if (line.trim() === TERMINATOR && openFences.length > 0) {
+			separateFromPrevious(out);
 			out.push(":".repeat(openFences.pop()!));
 			continue;
 		}
@@ -77,6 +82,10 @@ export function preprocessTheoremBlocks(text: string, triggers: ReadonlyMap<stri
 	}
 
 	return out.join("\n");
+}
+
+function separateFromPrevious(out: string[]): void {
+	if (out.length > 0 && out[out.length - 1]!.trim() !== "") out.push("");
 }
 
 interface BlockHeader {

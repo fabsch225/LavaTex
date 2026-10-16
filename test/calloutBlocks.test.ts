@@ -48,3 +48,13 @@ describe("convertCallouts", () => {
 		expect(out).toContain("Body.");
 	});
 });
+
+describe("preprocessTheoremBlocks", () => {
+	it("separates fences from a directly preceding text line, so pandoc still opens the div", () => {
+		const text = "**lemma**\nStatement:\n$$x$$\n**proof**\nArgument.\n∎\n∎";
+
+		expect(preprocessTheoremBlocks(text, TRIGGERS)).toBe(
+			":::::::::::::::::::: {.lemma}\nStatement:\n$$x$$\n\n::::::::::::::::::: {.proof}\nArgument.\n\n:::::::::::::::::::\n\n::::::::::::::::::::",
+		);
+	});
+});
