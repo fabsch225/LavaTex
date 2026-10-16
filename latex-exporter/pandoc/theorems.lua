@@ -11,13 +11,29 @@ local known = {
 	bem = true, kor = true, deflemma = true, proof = true,
 }
 
+-- Entries with `like: proof` (e.g. a Solution) aren't \newtheorem's: they
+-- typeset as amsthm's proof with their own name, so they're taken out of
+-- the list the template declares and remembered here as id -> name.
+local prooflike = {}
+
 function Meta(meta)
 	if meta.theorems then
+		local declared = pandoc.List()
 		for _, env in ipairs(meta.theorems) do
 			if env.id then
-				known[pandoc.utils.stringify(env.id)] = true
+				local id = pandoc.utils.stringify(env.id)
+				known[id] = true
+				if env.like and pandoc.utils.stringify(env.like) == "proof" then
+					prooflike[id] = pandoc.utils.stringify(env.name or env.id)
+				else
+					declared:insert(env)
+				end
+			else
+				declared:insert(env)
 			end
 		end
+		meta.theorems = declared
+		return meta
 	end
 end
 
@@ -35,7 +51,15 @@ function Div(el)
 	for _, class in ipairs(el.classes) do
 		if known[class] then
 			local opt = ""
-			if el.attributes.title then
+			local env = class
+			if prooflike[class] then
+				env = "proof"
+				local name = prooflike[class]
+				if el.attributes.title then
+					name = name .. " (" .. renderTitle(el.attributes.title) .. ")"
+				end
+				opt = "[" .. name .. "]"
+			elseif el.attributes.title then
 				opt = "[" .. renderTitle(el.attributes.title) .. "]"
 			end
 			local label = ""
@@ -44,10 +68,10 @@ function Div(el)
 			end
 
 			local blocks = pandoc.List({
-				pandoc.RawBlock("latex", "\\begin{" .. class .. "}" .. opt .. label),
+				pandoc.RawBlock("latex", "\\begin{" .. env .. "}" .. opt .. label),
 			})
 			blocks:extend(el.content)
-			blocks:insert(pandoc.RawBlock("latex", "\\end{" .. class .. "}"))
+			blocks:insert(pandoc.RawBlock("latex", "\\end{" .. env .. "}"))
 			return blocks
 		end
 	end

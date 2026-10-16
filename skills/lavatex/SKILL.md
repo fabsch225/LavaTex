@@ -68,6 +68,7 @@ theorems:
   - {id: lemma, name: Lemma, like: theorem}           # shares theorem's counter
   - {id: definition, name: Definition, like: theorem}
   - {id: deflemma, name: "Definition und Lemma", like: theorem}
+  - {id: solution, name: Solution, like: proof}       # typeset like a proof: italic "Solution.", ∎ at the end
 ```
 
 `id` is the LaTeX environment name; `name` is the exact word(s) you **bold**

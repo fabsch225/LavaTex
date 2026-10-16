@@ -266,7 +266,9 @@ Per-document YAML frontmatter:
   opinionated package list lives now (see `examples/Util/preamble.md`).
 - `theorems`: list of `{id, name, counter}` (new counter) or `{id, name, like}`
   (shares a counter). `id` becomes the `\newtheorem`/environment name;
-  `name` is the word you bold in the note to start one.
+  `name` is the word you bold in the note to start one. `like: proof`
+  (e.g. `{id: solution, name: Solution, like: proof}`) makes an unnumbered
+  proof-style block instead: italic "*Solution.*" and a ∎ at the end.
 - `macros`: literal LaTeX (`\newcommand...`), inserted verbatim into the
   preamble *and* registered as live MathJax macros (see below)
 - `bibliography-raw`: literal LaTeX (e.g. a `thebibliography` block), inserted
