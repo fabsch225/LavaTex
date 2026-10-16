@@ -36,13 +36,7 @@ function Div(el)
 		if known[class] then
 			local opt = ""
 			if el.attributes.title then
-				local title = renderTitle(el.attributes.title)
-				-- amsthm's proof[...] replaces the word "Proof" entirely; keep
-				-- it and add the title in parentheses, like theorem headers.
-				if class == "proof" then
-					title = "\\proofname{} (" .. title .. ")"
-				end
-				opt = "[" .. title .. "]"
+				opt = "[" .. renderTitle(el.attributes.title) .. "]"
 			end
 			local label = ""
 			if el.identifier ~= "" then
