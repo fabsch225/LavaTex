@@ -57,8 +57,10 @@
  */
 const TIKZ_BLOCK =
 	/^```tikz[ \t]*\r?\n([\s\S]*?)\r?\n```[ \t]*(?:\r?\n[ \t]*Figure:[ \t]*(.*))?/gm;
+// `\s*` also eats blank lines, so a header with empty lines between its
+// `\usepackage` lines is stripped as a whole, not just up to the first gap.
 const PREAMBLE_LINE =
-	/^[ \t]*\\(?:usepackage|usetikzlibrary)(?:\[[^\]]*\])?\{[^}]*\}[ \t]*\r?\n/;
+	/^\s*\\(?:usepackage|usetikzlibrary)(?:\[[^\]]*\])?\{[^}]*\}[ \t]*\r?\n/;
 const DOCUMENT_WRAPPER = /^[ \t]*\\begin\{document\}[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*\\end\{document\}[ \t]*$/;
 
 /** Strips TikZJax's standalone-document shell (leading `\usepackage{...}`/`\usetikzlibrary{...}` lines, `\begin{document}...\end{document}`), keeping just the diagram itself. */

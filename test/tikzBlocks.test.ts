@@ -25,4 +25,12 @@ describe("convertTikzBlocksToRaw", () => {
 			"```{=latex}\n\\begin{center}\n\\begin{tikzcd} A \\arrow[r] & B \\end{tikzcd}\n\\end{center}\n```",
 		);
 	});
+
+	it("strips a wrapper whose \\usepackage lines are separated by blank lines", () => {
+		const block = "```tikz\n\\usepackage{tikz-cd}\n\n\\usepackage{quiver}\n\n\\usepackage{amssymb}\n\\begin{document}\n\\begin{tikzcd} A \\arrow[r] & B \\end{tikzcd}\n\\end{document}\n```";
+
+		expect(convertTikzBlocksToRaw(block)).toBe(
+			"```{=latex}\n\\begin{center}\n\\begin{tikzcd} A \\arrow[r] & B \\end{tikzcd}\n\\end{center}\n```",
+		);
+	});
 });
