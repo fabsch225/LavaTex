@@ -32,6 +32,13 @@
 }
 \makeatother
 
+% Pandoc sets `strikeout` when the note uses ~~strikeout~~ (\st) or
+% ==highlight== (\hl), both from soul; \hl needs a color package to paint.
+$if(strikeout)$
+\usepackage{xcolor}
+\usepackage{soul}
+$endif$
+
 $header-includes$
 
 \setstretch{$if(linestretch)$$linestretch$$else$1.25$endif$}

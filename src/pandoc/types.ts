@@ -22,8 +22,9 @@
  * - `+lists_without_preceding_blankline`: Obsidian starts a list right
  *   after a paragraph line; pandoc's markdown otherwise needs a blank line
  *   first and folds the items into the paragraph as literal "- " text.
+ * - `+mark`: Obsidian's `==highlight==` syntax, written as soul's `\hl{}`.
  */
-export const PANDOC_MARKDOWN_FORMAT = "markdown-latex_macros+lists_without_preceding_blankline";
+export const PANDOC_MARKDOWN_FORMAT = "markdown-latex_macros+lists_without_preceding_blankline+mark";
 
 export interface PandocInput {
 	/** Preprocessed markdown, ready for pandoc's `PANDOC_MARKDOWN_FORMAT` reader. */
