@@ -30,3 +30,11 @@ describe("convertCodeBlocksToRaw", () => {
 		expect(convertCodeBlocksToRaw(input)).toBe(input);
 	});
 });
+
+describe("code blocks inside a callout", () => {
+	it("converts a quoted fence to lstlisting, leaving quoted tikz alone", () => {
+		expect(convertCodeBlocksToRaw("> ```python\n> x = 1\n> ```\n>\n> ```tikz\n> \\draw;\n> ```")).toBe(
+			"> ```{=latex}\n> \\begin{lstlisting}\n> x = 1\n> \\end{lstlisting}\n> ```\n>\n> ```tikz\n> \\draw;\n> ```",
+		);
+	});
+});

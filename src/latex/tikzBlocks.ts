@@ -55,6 +55,8 @@
  *   ```
  *   Figure: A commutative diagram. {#fig:comm}
  */
+import { mapQuotedFences } from "./quotedFences";
+
 const TIKZ_BLOCK =
 	/^```tikz[ \t]*\r?\n([\s\S]*?)\r?\n```[ \t]*(?:\r?\n[ \t]*Figure:[ \t]*(.*))?/gm;
 // `\s*` also eats blank lines, so a header with empty lines between its
@@ -90,7 +92,9 @@ const PREAMBLE_LINE_GLOBAL = /^[ \t]*(\\(?:usepackage|usetikzlibrary)(?:\[[^\]]*
  */
 export function collectTikzPreamble(text: string): string[] {
 	const lines: string[] = [];
-	for (const block of text.matchAll(TIKZ_BLOCK)) {
+	const blocks: string[] = [];
+	mapQuotedFences(text, (block) => (blocks.push(block), block));
+	for (const block of [text, ...blocks].flatMap((t) => [...t.matchAll(TIKZ_BLOCK)])) {
 		if (lines.length === 0) lines.push("\\usepackage{tikz}");
 		for (const line of block[1].matchAll(PREAMBLE_LINE_GLOBAL)) {
 			if (!lines.includes(line[1])) lines.push(line[1]);
@@ -108,6 +112,10 @@ export function withTikzPreamble(frontmatter: Record<string, unknown>, body: str
 }
 
 export function convertTikzBlocksToRaw(text: string): string {
+	return mapQuotedFences(convertBareTikzBlocks(text), convertBareTikzBlocks);
+}
+
+function convertBareTikzBlocks(text: string): string {
 	return text.replace(TIKZ_BLOCK, (_match, rawBody: string, figureLine?: string) => {
 		const body = stripTikzjaxWrapper(rawBody);
 		if (!figureLine) {

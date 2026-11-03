@@ -19,9 +19,15 @@
  * Requires `\usepackage{listings}` (and a `\lstset{...}`) in the note's
  * `preamble:` — not added automatically, since not every project needs it.
  */
+import { mapQuotedFences } from "./quotedFences";
+
 const CODE_BLOCK = /^```(?!tikz\b)([A-Za-z][\w+-]*)[ \t]*\r?\n([\s\S]*?)\r?\n```[ \t]*$/gm;
 
 export function convertCodeBlocksToRaw(text: string): string {
+	return mapQuotedFences(convertBare(text), convertBare);
+}
+
+function convertBare(text: string): string {
 	return text.replace(CODE_BLOCK, (_match, _lang: string, body: string) => {
 		return "```{=latex}\n\\begin{lstlisting}\n" + body + "\n\\end{lstlisting}\n```";
 	});

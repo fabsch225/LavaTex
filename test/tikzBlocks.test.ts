@@ -34,3 +34,23 @@ describe("convertTikzBlocksToRaw", () => {
 		);
 	});
 });
+
+describe("tikz blocks inside a callout", () => {
+	const quoted = "> [!task] Exercise 3\n> Some text.\n>\n> ```tikz\n> \\begin{document}\n> \\begin{tikzpicture}\n> \\draw (0,0) circle (1);\n> \\end{tikzpicture}\n> \\end{document}\n> ```\n\nAfter.";
+
+	it("converts a quoted tikz fence and keeps it quoted", () => {
+		expect(convertTikzBlocksToRaw(quoted)).toBe(
+			"> [!task] Exercise 3\n> Some text.\n>\n> ```{=latex}\n> \\begin{center}\n> \\begin{tikzpicture}\n> \\draw (0,0) circle (1);\n> \\end{tikzpicture}\n> \\end{center}\n> ```\n\nAfter.",
+		);
+	});
+
+	it("still hoists \\usepackage{tikz} for a quoted block", () => {
+		expect(collectTikzPreamble(quoted)).toEqual(["\\usepackage{tikz}"]);
+	});
+
+	it("converts nested quoted blocks too", () => {
+		expect(convertTikzBlocksToRaw("> > ```tikz\n> > \\draw (0,0);\n> > ```")).toBe(
+			"> > ```{=latex}\n> > \\begin{center}\n> > \\draw (0,0);\n> > \\end{center}\n> > ```",
+		);
+	});
+});
