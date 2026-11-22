@@ -32,10 +32,12 @@
 }
 \makeatother
 
-% Pandoc sets `strikeout` when the note uses ~~strikeout~~ (\st) or
-% ==highlight== (\hl), both from soul; \hl needs a color package to paint.
-$if(strikeout)$
+% xcolor: \hl needs a color package to paint, and the Lua filter turns
+% colored-circle emoji (🔴, 🟢, ...) into \textcolor bullets.
 \usepackage{xcolor}
+% Pandoc sets `strikeout` when the note uses ~~strikeout~~ (\st) or
+% ==highlight== (\hl), both from soul.
+$if(strikeout)$
 \usepackage{soul}
 $endif$
 

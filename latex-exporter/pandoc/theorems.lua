@@ -78,9 +78,105 @@ function Div(el)
 	return el
 end
 
+-- pdflatex has no glyphs for emoji and aborts on the first one ("Unicode
+-- character ... not set up for use with LaTeX"). Colored circles and
+-- squares, which notes use as markers (e.g. ==🔴text==), become a bullet or
+-- square in that color; every other emoji, and the joiners/variation
+-- selectors around them, is dropped. Code can't hold a marker, so there
+-- all emoji are dropped. Math is left alone.
+local colored = {
+	[0x1F534] = { "red", "dot" }, [0x1F535] = { "blue", "dot" },
+	[0x1F7E0] = { "orange", "dot" }, [0x1F7E1] = { "yellow", "dot" },
+	[0x1F7E2] = { "green", "dot" }, [0x1F7E3] = { "purple", "dot" },
+	[0x1F7E4] = { "brown", "dot" }, [0x26AB] = { "black", "dot" },
+	[0x1F7E5] = { "red", "square" }, [0x1F7E6] = { "blue", "square" },
+	[0x1F7E7] = { "orange", "square" }, [0x1F7E8] = { "yellow", "square" },
+	[0x1F7E9] = { "green", "square" }, [0x1F7EA] = { "purple", "square" },
+	[0x1F7EB] = { "brown", "square" }, [0x2B1B] = { "black", "square" },
+}
+
+local function isEmoji(cp)
+	return (cp >= 0x1F000 and cp <= 0x1FAFF) -- pictographs, emoticons, flags, skin tones
+		or (cp >= 0x2600 and cp <= 0x27BF) -- misc symbols, dingbats
+		or (cp >= 0x2B00 and cp <= 0x2BFF) -- misc symbols and arrows (⬛, ⭐)
+		or cp == 0xFE0F or cp == 0xFE0E or cp == 0x200D or cp == 0x20E3
+end
+
+-- \protect keeps the marker intact inside soul's \hl, which otherwise
+-- tokenizes its argument letter by letter.
+local function marker(color, shape)
+	local glyph = shape == "dot" and "\\textbullet" or "\\rule{0.6em}{0.6em}"
+	return "\\protect\\textcolor{" .. color .. "}{" .. glyph .. "}"
+end
+
+function Str(el)
+	if not el.text:find("[\226-\240]") then
+		return nil
+	end
+	local out = pandoc.List()
+	local buf = {}
+	local changed = false
+	local function flush()
+		if #buf > 0 then
+			out:insert(pandoc.Str(table.concat(buf)))
+			buf = {}
+		end
+	end
+	for _, cp in utf8.codes(el.text) do
+		local c = colored[cp]
+		if c then
+			flush()
+			out:insert(pandoc.RawInline("latex", marker(c[1], c[2])))
+			changed = true
+		elseif isEmoji(cp) then
+			changed = true
+		else
+			buf[#buf + 1] = utf8.char(cp)
+		end
+	end
+	if not changed then
+		return nil
+	end
+	flush()
+	return out
+end
+
+local function stripEmoji(text)
+	if not text:find("[\226-\240]") then
+		return nil
+	end
+	local kept = {}
+	for _, cp in utf8.codes(text) do
+		if not isEmoji(cp) then
+			kept[#kept + 1] = utf8.char(cp)
+		end
+	end
+	local result = table.concat(kept)
+	if result == text then
+		return nil
+	end
+	return result
+end
+
+function Code(el)
+	local text = stripEmoji(el.text)
+	if text then
+		el.text = text
+		return el
+	end
+end
+
+function CodeBlock(el)
+	local text = stripEmoji(el.text)
+	if text then
+		el.text = text
+		return el
+	end
+end
+
 -- Two passes, in this order: within a single filter pandoc visits blocks
 -- before metadata, so `known` must be filled in before any Div is seen.
 return {
 	{ Meta = Meta },
-	{ Div = Div },
+	{ Div = Div, Str = Str, Code = Code, CodeBlock = CodeBlock },
 }
