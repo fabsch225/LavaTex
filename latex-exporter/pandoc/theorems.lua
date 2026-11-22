@@ -109,6 +109,48 @@ local function marker(color, shape)
 	return "\\protect\\textcolor{" .. color .. "}{" .. glyph .. "}"
 end
 
+-- A colored circle inside a highlight (==🔴text==) picks the highlight's
+-- color instead of printing a marker: soul's \hl paints with whatever
+-- \sethlcolor set, scoped here by a group. Tints keep the text readable.
+local highlightColors = {
+	[0x1F534] = "red!35", [0x1F535] = "blue!30", [0x1F7E0] = "orange!45",
+	[0x1F7E1] = "yellow", [0x1F7E2] = "green!35", [0x1F7E3] = "purple!30",
+	[0x1F7E4] = "brown!35", [0x26AB] = "black!25",
+}
+
+function Span(el)
+	if not el.classes:includes("mark") then
+		return nil
+	end
+	local color
+	for i, inline in ipairs(el.content) do
+		if inline.t == "Str" and inline.text:find("[\226-\240]") then
+			local kept = {}
+			for _, cp in utf8.codes(inline.text) do
+				if highlightColors[cp] then
+					color = color or highlightColors[cp]
+				else
+					kept[#kept + 1] = utf8.char(cp)
+				end
+			end
+			el.content[i] = pandoc.Str(table.concat(kept))
+		end
+	end
+	if not color then
+		return nil
+	end
+	-- Drop a space left behind by "==🔴 text==".
+	while #el.content > 0 and (el.content[1].t == "Space"
+			or (el.content[1].t == "Str" and el.content[1].text == "")) do
+		el.content:remove(1)
+	end
+	return {
+		pandoc.RawInline("latex", "{\\sethlcolor{" .. color .. "}"),
+		el,
+		pandoc.RawInline("latex", "}"),
+	}
+end
+
 function Str(el)
 	if not el.text:find("[\226-\240]") then
 		return nil
@@ -174,9 +216,11 @@ function CodeBlock(el)
 	end
 end
 
--- Two passes, in this order: within a single filter pandoc visits blocks
--- before metadata, so `known` must be filled in before any Div is seen.
+-- Three passes, in this order: within a single filter pandoc visits blocks
+-- before metadata, so `known` must be filled in before any Div is seen;
+-- and highlight colors must be read before Str turns circles into markers.
 return {
 	{ Meta = Meta },
-	{ Div = Div, Str = Str, Code = Code, CodeBlock = CodeBlock },
+	{ Div = Div, Span = Span },
+	{ Str = Str, Code = Code, CodeBlock = CodeBlock },
 }
