@@ -30,9 +30,23 @@ describe("convertCallouts", () => {
 		expect(convertCallouts(text, TRIGGERS)).toBe("**lemma**\nStatement.\n**proof**\nArgument.\n∎\n∎");
 	});
 
-	it("keeps an unknown callout as a blockquote with a bold title", () => {
-		expect(convertCallouts("> [!info] Heads up\n> Text.", TRIGGERS)).toBe("> **Heads up**\n> Text.");
-		expect(convertCallouts("> [!info]\n>\n> Text.", TRIGGERS)).toBe("> **Info**\n>\n> Text.");
+	it("turns a non-theorem callout into an environment named after its type", () => {
+		expect(convertCallouts("> [!Info] Heads up {#note-a}\n> Text.", TRIGGERS)).toBe("**callout:info** (Heads up) {#note-a}\nText.\n∎");
+
+		const out = preprocessTheoremBlocks(convertCallouts("> [!warning]\n> Careful.\n> > [!lemma]\n> > Inner.", TRIGGERS), TRIGGERS);
+		expect(out).toBe(
+			':::::::::::::::::::: {.callout type="warning"}\nCareful.\n\n::::::::::::::::::: {.lemma}\nInner.\n\n:::::::::::::::::::\n\n::::::::::::::::::::',
+		);
+	});
+
+	it("keeps a non-theorem callout as a blockquote with a bold title for Markdown export", () => {
+		const opts = { unknown: "blockquote" } as const;
+		expect(convertCallouts("> [!info] Heads up\n> Text.", TRIGGERS, opts)).toBe("> **Heads up**\n> Text.");
+		expect(convertCallouts("> [!info]\n>\n> Text.", TRIGGERS, opts)).toBe("> **Info**\n>\n> Text.");
+	});
+
+	it("does not open a callout environment from ordinary bold text", () => {
+		expect(preprocessTheoremBlocks("**callout:bad name** text", TRIGGERS)).toBe("**callout:bad name** text");
 	});
 
 	it("leaves plain blockquotes and fenced code alone", () => {

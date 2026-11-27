@@ -18,21 +18,35 @@
  * the environment's title; a `+`/`-` fold marker is ignored. Callouts nest
  * the usual way (`> > [!proof]`).
  *
- * A callout whose type isn't a known environment (a plain `[!info]` aside)
- * is kept as a blockquote, with the `[!type]` marker — meaningless outside
- * Obsidian — replaced by its title in bold.
+ * A callout whose type isn't a theorem-like environment (a plain `[!info]`
+ * aside) becomes a LaTeX environment named after its type — `\begin{info}
+ * [Title] ... \end{info}` — through the same bold-statement path, with the
+ * reserved trigger `**callout:info**`. `theorems.lua` supplies a plain
+ * fallback definition for any type the preamble doesn't define, so a note
+ * restyles a callout type by defining that environment itself. For
+ * Markdown export (`unknown: "blockquote"`), it is kept as a blockquote
+ * instead, the `[!type]` marker — meaningless outside Obsidian — replaced
+ * by its title in bold.
  */
+
+/** Trigger-word prefix marking a non-theorem callout for `preprocessTheoremBlocks`. */
+export const CALLOUT_TRIGGER_PREFIX = "callout:";
+
+export interface CalloutOptions {
+	/** What a callout that isn't a theorem-like environment becomes. */
+	unknown?: "environment" | "blockquote";
+}
 
 const CALLOUT_HEADER = /^\[!([\w-]+)\][+-]?[ \t]*(.*)$/;
 const QUOTE_PREFIX = /^[ \t]{0,3}>[ \t]?/;
 const FENCE = /^[ \t]*(```|~~~)/;
 const LABEL_SUFFIX = /\s*\{#([\w:-]+)\}\s*$/;
 
-export function convertCallouts(text: string, triggers: ReadonlyMap<string, string>): string {
-	return convertLines(text.split("\n"), triggers).join("\n");
+export function convertCallouts(text: string, triggers: ReadonlyMap<string, string>, options: CalloutOptions = {}): string {
+	return convertLines(text.split("\n"), triggers, options.unknown ?? "environment").join("\n");
 }
 
-function convertLines(lines: string[], triggers: ReadonlyMap<string, string>): string[] {
+function convertLines(lines: string[], triggers: ReadonlyMap<string, string>, unknown: "environment" | "blockquote"): string[] {
 	const out: string[] = [];
 	let fence: string | null = null;
 
@@ -60,7 +74,7 @@ function convertLines(lines: string[], triggers: ReadonlyMap<string, string>): s
 		while (i + 1 < lines.length && QUOTE_PREFIX.test(lines[i + 1])) {
 			body.push(lines[++i].replace(QUOTE_PREFIX, ""));
 		}
-		const convertedBody = convertLines(body, triggers);
+		const convertedBody = convertLines(body, triggers, unknown);
 
 		let title = header[2].trim();
 		let label = "";
@@ -70,7 +84,8 @@ function convertLines(lines: string[], triggers: ReadonlyMap<string, string>): s
 			title = title.slice(0, labelMatch.index);
 		}
 
-		const triggerWord = triggerWordFor(header[1], triggers);
+		const triggerWord =
+			triggerWordFor(header[1], triggers) ?? (unknown === "environment" ? CALLOUT_TRIGGER_PREFIX + header[1].toLowerCase() : null);
 		if (triggerWord) {
 			const parts = [`**${triggerWord}**`, title && `(${title})`, label && `{#${label}}`];
 			out.push(parts.filter(Boolean).join(" "), ...convertedBody, "∎");

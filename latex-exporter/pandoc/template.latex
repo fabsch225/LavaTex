@@ -43,6 +43,14 @@ $endif$
 
 $header-includes$
 
+% Obsidian callouts (> [!info] Title) become \begin{info}[Title] ...
+% \end{info}. Defining an environment of a callout's type in the preamble
+% (e.g. with tcolorbox) restyles it; every type left undefined falls back
+% to this plain titled, indented block.
+\newenvironment{lavatexcallout}[1]{%
+  \begin{list}{}{\leftmargin=1.5em\rightmargin=0pt}\item[]\textbf{#1}\par\nobreak}%
+  {\end{list}}
+
 \setstretch{$if(linestretch)$$linestretch$$else$1.25$endif$}
 
 % required by pandoc for compact (-) lists

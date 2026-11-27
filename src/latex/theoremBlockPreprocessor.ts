@@ -31,6 +31,8 @@
  * and each `∎` closes the innermost still-open one.
  */
 
+import { CALLOUT_TRIGGER_PREFIX } from "./calloutBlocks";
+
 const TERMINATOR = "∎";
 
 /**
@@ -54,7 +56,7 @@ export function preprocessTheoremBlocks(text: string, triggers: ReadonlyMap<stri
 			const fenceLength = Math.max(3, BASE_FENCE_LENGTH - openFences.length);
 			openFences.push(fenceLength);
 
-			const attrs = [`.${header.id}`, header.title && `title="${escapeAttr(header.title)}"`, header.label && `#${header.label}`]
+			const attrs = [`.${header.id}`, header.type && `type="${header.type}"`, header.title && `title="${escapeAttr(header.title)}"`, header.label && `#${header.label}`]
 				.filter(Boolean)
 				.join(" ");
 			// A fence only opens a div at the start of a block: right after a
@@ -90,6 +92,8 @@ function separateFromPrevious(out: string[]): void {
 
 interface BlockHeader {
 	id: string;
+	/** A plain callout's type (`info` for `**callout:info**`), whose environment it opens. */
+	type: string;
 	title: string;
 	label: string;
 	/** Any body text that followed the header on the same line. */
@@ -110,7 +114,8 @@ function parseHeader(line: string, triggers: ReadonlyMap<string, string>): Block
 		.trim()
 		.replace(/\.$/, "")
 		.toLowerCase();
-	const id = triggers.get(trigger);
+	const type = trigger.startsWith(CALLOUT_TRIGGER_PREFIX) ? trigger.slice(CALLOUT_TRIGGER_PREFIX.length) : "";
+	const id = type && /^[\w-]+$/.test(type) ? "callout" : triggers.get(trigger);
 	if (!id) {
 		return null;
 	}
@@ -138,7 +143,7 @@ function parseHeader(line: string, triggers: ReadonlyMap<string, string>): Block
 		rest = rest.slice(1).trimStart();
 	}
 
-	return { id, title, label, rest };
+	return { id, type, title, label, rest };
 }
 
 /** Index of the `)` closing `text`'s leading `(`, so a title like `$f(x)$` stays whole; -1 if unbalanced. */

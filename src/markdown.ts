@@ -76,7 +76,7 @@ export async function exportNoteToMarkdown(reader: NoteReader, note: NoteRef, ra
 	);
 	// Callouts become bold-statement blocks so they're numbered like any
 	// other theorem-like block; their `∎` is stripped again right after.
-	restBody = collapseBlankLines(stripEnvironmentEndMarks(convertCallouts(restBody, collectEnvironmentTriggers(frontmatter))));
+	restBody = collapseBlankLines(stripEnvironmentEndMarks(convertCallouts(restBody, collectEnvironmentTriggers(frontmatter), { unknown: "blockquote" })));
 	restBody = expandMacros(restBody, parseMacros(macros));
 	restBody = resolveNumbering(restBody, theorems, numberwithin);
 

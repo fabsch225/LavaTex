@@ -47,7 +47,53 @@ function renderTitle(title)
 	return pandoc.write(doc, "latex"):gsub("%s+$", "")
 end
 
+-- Callout types used in the note (`::: {.callout type="info"}`), in order
+-- of first use, so each gets a fallback definition.
+local calloutTypes = pandoc.List()
+local seenCallout = {}
+
+-- A plain Obsidian callout (`> [!info] Title`) becomes an environment
+-- named after its type: \begin{info}[Title] ... \end{info}.
+local function Callout(el)
+	local env = el.attributes.type
+	if not seenCallout[env] then
+		seenCallout[env] = true
+		calloutTypes:insert(env)
+	end
+	local opt = ""
+	if el.attributes.title then
+		opt = "[{" .. renderTitle(el.attributes.title) .. "}]"
+	end
+	local label = ""
+	if el.identifier ~= "" then
+		label = "\\label{" .. el.identifier .. "}"
+	end
+	local blocks = pandoc.List({ pandoc.RawBlock("latex", "\\begin{" .. env .. "}" .. opt .. label) })
+	blocks:extend(el.content)
+	blocks:insert(pandoc.RawBlock("latex", "\\end{" .. env .. "}"))
+	return blocks
+end
+
+-- Each callout type the preamble didn't define itself gets the template's
+-- plain `lavatexcallout` look, titled with the type ("Info") by default.
+local function Pandoc(doc)
+	local defs = pandoc.List()
+	for _, env in ipairs(calloutTypes) do
+		local name = env:sub(1, 1):upper() .. env:sub(2):gsub("[-_]", " ")
+		defs:insert("\\ProvideDocumentEnvironment{" .. env .. "}{o}"
+			.. "{\\begin{lavatexcallout}{\\IfValueTF{#1}{#1}{" .. name .. "}}}"
+			.. "{\\end{lavatexcallout}}")
+	end
+	if #defs > 0 then
+		doc.blocks:insert(1, pandoc.RawBlock("latex", table.concat(defs, "\n")))
+	end
+	return doc
+end
+
 function Div(el)
+	if el.classes:includes("callout") and el.attributes.type then
+		return Callout(el)
+	end
 	for _, class in ipairs(el.classes) do
 		if known[class] then
 			local opt = ""
@@ -217,10 +263,11 @@ function CodeBlock(el)
 end
 
 -- Three passes, in this order: within a single filter pandoc visits blocks
--- before metadata, so `known` must be filled in before any Div is seen;
+-- before metadata (and the whole document last, so Pandoc sees every
+-- callout type), so `known` must be filled in before any Div is seen;
 -- and highlight colors must be read before Str turns circles into markers.
 return {
 	{ Meta = Meta },
-	{ Div = Div, Span = Span },
+	{ Div = Div, Span = Span, Pandoc = Pandoc },
 	{ Str = Str, Code = Code, CodeBlock = CodeBlock },
 }
