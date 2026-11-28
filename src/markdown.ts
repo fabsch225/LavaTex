@@ -31,8 +31,10 @@
  *   bold-statement blocks, so they're numbered too; any other callout stays
  *   a blockquote with its `[!type]` marker turned into a bold title.
  *
- * Bold-statement headers, `$$...$$` math, and `\begin{align}` are left
- * exactly as written: already valid, readable markdown, nothing to do.
+ * - Every `$$` display-math delimiter is put on a line of its own.
+ *
+ * Bold-statement headers and `\begin{align}` are left exactly as written:
+ * already valid, readable markdown, nothing to do.
  *
  * This module has no optional dependency on a pandoc backend at all — it's
  * the one export target that works with nothing installed beyond this
@@ -42,7 +44,7 @@ import { getFrontmatterInfo, parseFrontmatter, stringifyFrontmatter } from "./fr
 import { convertCallouts } from "./latex/calloutBlocks";
 import { convertImageEmbeds, folderOf } from "./latex/imageEmbeds";
 import { expandMacros, parseMacros } from "./latex/macroExpansion";
-import { collapseBlankLines, stripEnvironmentEndMarks, unwrapRawLatexSpans } from "./latex/markdownNormalizer";
+import { collapseBlankLines, splitDisplayMath, stripEnvironmentEndMarks, unwrapRawLatexSpans } from "./latex/markdownNormalizer";
 import { type TheoremSpec, resolveNumbering } from "./latex/markdownNumbering";
 import { collectEnvironmentTriggers } from "./latex/theoremEnvironments";
 import { stripWikilinks } from "./latex/wikilinks";
@@ -77,7 +79,7 @@ export async function exportNoteToMarkdown(reader: NoteReader, note: NoteRef, ra
 	// Callouts become bold-statement blocks so they're numbered like any
 	// other theorem-like block; their `∎` is stripped again right after.
 	restBody = collapseBlankLines(stripEnvironmentEndMarks(convertCallouts(restBody, collectEnvironmentTriggers(frontmatter), { unknown: "blockquote" })));
-	restBody = expandMacros(restBody, parseMacros(macros));
+	restBody = splitDisplayMath(expandMacros(restBody, parseMacros(macros)));
 	restBody = resolveNumbering(restBody, theorems, numberwithin);
 
 	const parts: string[] = [];
